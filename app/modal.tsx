@@ -96,7 +96,6 @@ export default function CreateReportModal() {
     mapRef.current?.animateToRegion(newRegion, 1000);
   };
 
-  // Reverse geocoding to get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const results = await Location.reverseGeocodeAsync({
@@ -123,6 +122,48 @@ export default function CreateReportModal() {
     }
   };
 
+  // Get current device location
+  const getCurrentLocation = async () => {
+    try {
+      // Request location permissions
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        alert(
+          'Cần cấp quyền truy cập vị trí để sử dụng tính năng này'
+        );
+        return;
+      }
+
+      setLoading(true);
+      // Get current position
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = location.coords;
+
+      // Reverse geocode to get address
+      const newRegion = {
+        latitude,
+        longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+      setRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 1000);
+
+      // Get address from coordinates
+      reverseGeocode(latitude, longitude);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      alert('Không thể lấy vị trí hiện tại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -140,9 +181,11 @@ export default function CreateReportModal() {
             }
             style={styles.mapImage}
             region={region}
-            onRegionChangeComplete={(newRegion) =>
-              setRegion(newRegion)
-            }
+            onRegionChangeComplete={(newRegion) => {
+              setRegion(newRegion);
+              // Auto-reverse geocode when user moves the map
+              reverseGeocode(newRegion.latitude, newRegion.longitude);
+            }}
           >
             {selectedLocation && (
               <Marker
@@ -182,6 +225,23 @@ export default function CreateReportModal() {
               />
             )}
           </View>
+
+          {/* CURRENT LOCATION BUTTON */}
+          <TouchableOpacity
+            style={styles.currentLocationBtn}
+            onPress={getCurrentLocation}
+            disabled={loading}
+          >
+            <Ionicons
+              name="locate"
+              size={20}
+              color={COLORS.primary}
+              style={{ marginRight: SPACING.sm }}
+            />
+            <Text style={styles.currentLocationText}>
+              Vị trí hiện tại
+            </Text>
+          </TouchableOpacity>
 
           {/* SEARCH RESULTS DROPDOWN */}
           {showSuggestions && searchResults.length > 0 && (
@@ -392,6 +452,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     fontSize: FONT_SIZES.sm,
     color: COLORS.gray900,
+  },
+  currentLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.gray50,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+  currentLocationText: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.medium,
+    fontSize: FONT_SIZES.sm,
   },
   suggestionsDropdown: {
     maxHeight: 250,
