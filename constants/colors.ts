@@ -7,12 +7,14 @@
 export const COLORS = {
   // Primary Brand Color - Blue
   primary: '#3B82F6',
-  primaryLight: '#60A5FA',
+  primaryLight: '#DCEAFE',
   primaryDark: '#1E40AF',
 
   // Secondary Colors
   success: '#10B981', // Green
+  successLight: '#ECFDF5',
   warning: '#F59E0B', // Amber
+  warningLight: '#FFFBEB',
   danger: '#EF4444', // Red
   info: '#06B6D4', // Cyan
 
