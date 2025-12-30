@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { cssInterop } from 'nativewind';
 import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -15,12 +14,6 @@ import {
 } from 'react-native';
 
 // Enable className on third-party icons
-cssInterop(Ionicons, {
-  className: {
-    target: 'style',
-    nativeStyleToProp: { color: true, size: true },
-  },
-});
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -30,18 +23,18 @@ const LoginScreen = () => {
   const handleLogin = () => {
     if (email && password) {
       console.log('Login attempt:', { email, password });
-      router.replace('/landing-page');
+      router.replace('/(tabs)/');
     }
   };
 
   const handleBiometric = () => {
     console.log('Biometric login');
-    router.replace('/landing-page');
+    router.replace('/(tabs)/');
   };
 
   const handleScanCode = () => {
     console.log('Scan code login');
-    router.replace('/landing-page');
+    router.replace('/(tabs)/');
   };
 
   const handleForgotPassword = () => {

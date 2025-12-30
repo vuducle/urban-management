@@ -3,15 +3,14 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Button } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  initialRouteName: 'landing-page',
+  initialRouteName: 'index',
 };
 
 export default function RootLayout() {
@@ -22,22 +21,10 @@ export default function RootLayout() {
       value={colorScheme === '' ? DarkTheme : DefaultTheme}
     >
       <Stack>
-        <Stack.Screen
-          name="landing-page"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="(tabs)"
-          options={{
-            headerShown: true,
-            title: 'Dashboard',
-            headerRight: () => (
-              <Button
-                onPress={() => router.push('/landing-page')}
-                title="Sign In"
-              />
-            ),
-          }}
+          options={{ headerShown: false }}
         />
       </Stack>
       <StatusBar style="auto" />
