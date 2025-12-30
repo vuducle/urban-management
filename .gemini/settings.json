@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "react-native-mcp": {
+      "command": "react-native-mcp-guide",
+      "args": ["mcp"],
+      "env": {
+        "PROJECT_TYPE": "react-native"
+      }
+    }
+  }
+}
