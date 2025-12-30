@@ -1,4 +1,10 @@
 import {
+  BORDER_RADIUS,
+  COLORS,
+  SHADOWS,
+  SPACING,
+} from '@/constants/colors';
+import {
   Ionicons,
   MaterialCommunityIcons,
   Octicons,
@@ -62,15 +68,17 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             <MaterialCommunityIcons
               name="view-dashboard"
               size={24}
-              color={getIsFocused('index') ? '#3B82F6' : '#94A3B8'}
+              color={
+                getIsFocused('index') ? COLORS.primary : COLORS.slate
+              }
             />
             <Text
               style={[
                 styles.tabLabel,
                 {
                   color: getIsFocused('index')
-                    ? '#3B82F6'
-                    : '#94A3B8',
+                    ? COLORS.primary
+                    : COLORS.slate,
                 },
               ]}
             >
@@ -88,15 +96,17 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             <Ionicons
               name="map-outline"
               size={24}
-              color={getIsFocused('ban-do') ? '#3B82F6' : '#94A3B8'}
+              color={
+                getIsFocused('ban-do') ? COLORS.primary : COLORS.slate
+              }
             />
             <Text
               style={[
                 styles.tabLabel,
                 {
                   color: getIsFocused('ban-do')
-                    ? '#3B82F6'
-                    : '#94A3B8',
+                    ? COLORS.primary
+                    : COLORS.slate,
                 },
               ]}
             >
@@ -116,15 +126,19 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             <Octicons
               name="history"
               size={24}
-              color={getIsFocused('lich-su') ? '#3B82F6' : '#94A3B8'}
+              color={
+                getIsFocused('lich-su')
+                  ? COLORS.primary
+                  : COLORS.slate
+              }
             />
             <Text
               style={[
                 styles.tabLabel,
                 {
                   color: getIsFocused('lich-su')
-                    ? '#3B82F6'
-                    : '#94A3B8',
+                    ? COLORS.primary
+                    : COLORS.slate,
                 },
               ]}
             >
@@ -142,15 +156,17 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             <Ionicons
               name="person-outline"
               size={24}
-              color={getIsFocused('ho-so') ? '#3B82F6' : '#94A3B8'}
+              color={
+                getIsFocused('ho-so') ? COLORS.primary : COLORS.slate
+              }
             />
             <Text
               style={[
                 styles.tabLabel,
                 {
                   color: getIsFocused('ho-so')
-                    ? '#3B82F6'
-                    : '#94A3B8',
+                    ? COLORS.primary
+                    : COLORS.slate,
                 },
               ]}
             >
@@ -198,19 +214,15 @@ const styles = StyleSheet.create({
   },
   tabBarMain: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     width: '100%',
     height: 70,
     paddingBottom: Platform.OS === 'ios' ? 15 : 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: BORDER_RADIUS['2xl'],
+    borderTopRightRadius: BORDER_RADIUS['2xl'],
     alignItems: 'center',
     justifyContent: 'space-around',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    ...SHADOWS.lg,
   },
   tabItem: {
     alignItems: 'center',
@@ -219,7 +231,8 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: SPACING.xs,
+    color: COLORS.slate,
     fontWeight: '500',
   },
   placeholder: {
@@ -231,11 +244,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
-    shadowColor: '#3B82F6',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,

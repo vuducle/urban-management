@@ -1,3 +1,9 @@
+import {
+  BORDER_RADIUS,
+  COLORS,
+  SHADOWS,
+  SPACING,
+} from '@/constants/colors';
 import Entypo from '@expo/vector-icons/Entypo';
 import React from 'react';
 import {
@@ -46,9 +52,9 @@ const IncidentMap = () => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 20,
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING['2xl'],
+    marginBottom: SPACING['2xl'],
   },
   header: {
     flexDirection: 'row',
@@ -59,23 +65,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
+    color: COLORS.gray900,
   },
   expandText: {
-    color: '#3B82F6',
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: '500',
   },
   mapContainer: {
     height: 180,
     width: '100%',
-    borderRadius: 20,
-    // Shadow/Elevation
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    borderRadius: BORDER_RADIUS['2xl'],
+    ...SHADOWS.md,
   },
   mapImage: {
     flex: 1,
@@ -86,16 +87,11 @@ const styles = StyleSheet.create({
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    // Button Shadow
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: COLORS.white,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.sm,
   },
   buttonIcon: {
     marginRight: 8,

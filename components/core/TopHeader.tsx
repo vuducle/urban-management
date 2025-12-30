@@ -1,3 +1,9 @@
+import {
+  BORDER_RADIUS,
+  COLORS,
+  SHADOWS,
+  SPACING,
+} from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import {
   Image,
@@ -47,11 +53,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F7FAFC', // Light background color from the image
-    borderRadius: 20,
-    marginHorizontal: 10,
-    marginTop: 10,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.gray100,
+    borderRadius: BORDER_RADIUS['2xl'],
+    marginHorizontal: SPACING.sm,
+    marginTop: SPACING.sm,
   },
   leftSection: {
     flexDirection: 'row',
@@ -64,7 +70,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#CBD5E0',
+    backgroundColor: COLORS.gray300,
   },
   onlineStatus: {
     position: 'absolute',
@@ -73,35 +79,30 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#48BB78', // Online green
+    backgroundColor: COLORS.success,
     borderWidth: 2,
-    borderColor: '#FFFFFF', // White border to make it pop
+    borderColor: COLORS.white,
   },
   textContainer: {
-    marginLeft: 12,
+    marginLeft: SPACING.md,
   },
   greeting: {
     fontSize: 14,
-    color: '#718096', // Muted grey text
+    color: COLORS.gray500,
   },
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1A202C', // Dark text for the name
+    color: COLORS.gray900,
   },
   notificationButton: {
     width: 45,
     height: 45,
     borderRadius: 22.5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    // Shadow for iOS/Android
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...SHADOWS.sm,
   },
   redDot: {
     position: 'absolute',

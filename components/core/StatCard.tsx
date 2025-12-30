@@ -1,3 +1,4 @@
+import { COLORS } from '@/constants/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
@@ -63,29 +64,29 @@ export const StatsGrid = () => {
         title="Tổng sự cố"
         value="12"
         iconName="clipboard-text"
-        iconColor="#3B82F6"
-        bgColor="#EFF6FF"
+        iconColor={COLORS.primary}
+        bgColor={COLORS.gray100}
         badgeText="+2"
       />
       <StatCard
         title="Đang chờ"
         value="5"
         iconName="clipboard-clock"
-        iconColor="#F59E0B"
+        iconColor={COLORS.warning}
         bgColor="#FFFBEB"
       />
       <StatCard
         title="Đã xử lý"
         value="3"
         iconName="check-circle"
-        iconColor="#10B981"
+        iconColor={COLORS.success}
         bgColor="#ECFDF5"
       />
       <StatCard
         title="Khẩn cấp"
         value="4"
         iconName="alert-decagram"
-        iconColor="#EF4444"
+        iconColor={COLORS.danger}
         bgColor="#FEF2F2"
         badgeText="!"
       />
