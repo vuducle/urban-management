@@ -7,9 +7,12 @@ import {
   SPACING,
 } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import * as Location from 'expo-location';
+import React, { useRef, useState } from 'react';
 import {
-  Image,
+  ActivityIndicator,
+  FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,37 +20,202 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_APPLE } from 'react-native-maps';
+
+interface LocationResult {
+  address: string;
+  latitude: number;
+  longitude: number;
+  name?: string;
+}
 
 export default function CreateReportModal() {
+  const mapRef = useRef<MapView>(null);
+  const [region, setRegion] = useState({
+    latitude: 10.7769, // Ho Chi Minh City
+    longitude: 106.7009,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<
+    LocationResult[]
+  >([]);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Search locations using Expo Location Geocoding
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Use Expo Location Geocoding for address search
+      const results = await Location.geocodeAsync(query);
+
+      if (results && results.length > 0) {
+        const mapped = results.slice(0, 5).map((result, index) => ({
+          address: query, // Fallback to search query as address
+          latitude: result.latitude,
+          longitude: result.longitude,
+          name: `${result.latitude.toFixed(
+            4
+          )}, ${result.longitude.toFixed(4)}`,
+        }));
+        setSearchResults(mapped);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle location selection from search results
+  const selectLocation = (location: LocationResult) => {
+    setSelectedLocation(location);
+    setSearchQuery(location.address);
+    setShowSuggestions(false);
+
+    const newRegion = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
+    setRegion(newRegion);
+    mapRef.current?.animateToRegion(newRegion, 1000);
+  };
+
+  // Reverse geocoding to get address from coordinates
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const results = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lng,
+      });
+
+      if (results && results.length > 0) {
+        const result = results[0];
+        const address = `${
+          result.street ? result.street + ', ' : ''
+        }${result.district ? result.district + ', ' : ''}${
+          result.city ? result.city : ''
+        }`;
+        setSearchQuery(address);
+        setSelectedLocation({
+          address,
+          latitude: lat,
+          longitude: lng,
+        });
+      }
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+    }
+  };
+
   return (
     <ScrollView
-      style={styles.container}
+      style={{ flex: 1 }}
       contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
     >
-      {/* SECTION: Location */}
       <Text style={styles.sectionTitle}>Vị trí sự cố</Text>
+
       <View style={styles.mapCard}>
         <View style={styles.mapPlaceholder}>
-          <Image
-            source={{
-              uri: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b',
-            }}
+          <MapView
+            ref={mapRef}
+            provider={
+              Platform.OS === 'ios' ? PROVIDER_APPLE : undefined
+            }
             style={styles.mapImage}
-            resizeMode="cover"
-          />
+            region={region}
+            onRegionChangeComplete={(newRegion) =>
+              setRegion(newRegion)
+            }
+          >
+            {selectedLocation && (
+              <Marker
+                coordinate={{
+                  latitude: selectedLocation.latitude,
+                  longitude: selectedLocation.longitude,
+                }}
+                title="Vị trí sự cố"
+              />
+            )}
+          </MapView>
         </View>
-        <View style={styles.addressRow}>
-          <Ionicons
-            name="location"
-            size={20}
-            color={COLORS.primary}
-          />
-          <View style={{ marginLeft: SPACING.sm }}>
-            <Text style={styles.addressLabel}>ĐỊA CHỈ HIỆN TẠI</Text>
-            <Text style={styles.addressText}>
-              123 Đường Nguyễn Huệ, Quận 1, TP. HCM
-            </Text>
+
+        {/* SEARCH LOCATION INPUT */}
+        <View style={styles.searchWrapper}>
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search"
+              size={20}
+              color={COLORS.primary}
+              style={{ marginLeft: SPACING.md }}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Tìm kiếm địa điểm (vd: Yoshiyoshi Ho Chi Minh)..."
+              value={searchQuery}
+              onChangeText={handleSearch}
+              onFocus={() =>
+                searchResults.length > 0 && setShowSuggestions(true)
+              }
+              placeholderTextColor={COLORS.gray400}
+            />
+            {loading && (
+              <ActivityIndicator
+                size="small"
+                color={COLORS.primary}
+              />
+            )}
           </View>
+
+          {/* SEARCH RESULTS DROPDOWN */}
+          {showSuggestions && searchResults.length > 0 && (
+            <FlatList
+              data={searchResults}
+              keyExtractor={(item, index) => index.toString()}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.suggestionItem}
+                  onPress={() => selectLocation(item)}
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={18}
+                    color={COLORS.primary}
+                    style={{ marginRight: SPACING.md }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={styles.suggestionText}
+                      numberOfLines={1}
+                    >
+                      {item.address}
+                    </Text>
+                    <Text style={styles.suggestionMeta}>
+                      {item.name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              style={styles.suggestionsDropdown}
+            />
+          )}
         </View>
       </View>
 
@@ -123,11 +291,6 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
     marginBottom: SPACING.xl,
   },
-  addressRow: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-    alignItems: 'center',
-  },
   addressLabel: {
     fontSize: 10,
     color: COLORS.slate,
@@ -200,14 +363,78 @@ const styles = StyleSheet.create({
   submitText: { color: 'white', fontWeight: 'bold', marginLeft: 8 },
 
   mapPlaceholder: {
-    height: 150,
+    height: 200,
     backgroundColor: '#E2E8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
     overflow: 'hidden',
+    position: 'relative',
   },
   mapImage: {
     width: '100%',
     height: '100%',
+  },
+  searchWrapper: {
+    backgroundColor: 'white',
+    padding: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray100,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gray50,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray900,
+  },
+  suggestionsDropdown: {
+    maxHeight: 250,
+    marginTop: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+    alignItems: 'center',
+  },
+  suggestionText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.gray900,
+  },
+  suggestionMeta: {
+    fontSize: 11,
+    color: COLORS.gray500,
+    marginTop: 4,
+  },
+  locateBtn: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'white',
+    padding: 8,
+    borderRadius: BORDER_RADIUS.md,
+    ...SHADOWS.sm,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    padding: SPACING.md,
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray100,
   },
 });

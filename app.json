@@ -39,6 +39,11 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        },
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Cần truy cập vị trí của bạn để cung cấp các dịch vụ dựa trên vị trí.",
+          "locationWhenInUsePermission": "Cần truy cập vị trí của bạn để cung cấp các dịch vụ dựa trên vị trí."
         }
       ]
     ],
