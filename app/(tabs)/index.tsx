@@ -1,5 +1,6 @@
 import IncidentMap from '@/components/core/IncidentMap';
 import NewsSlider from '@/components/core/NewsSlider';
+import RecentActivity from '@/components/core/RecentActivity';
 import StatCard from '@/components/core/StatCard';
 import TopHeader from '@/components/core/TopHeader';
 import React from 'react';
@@ -17,7 +18,8 @@ export default function HomeScreen() {
         <StatCard />
         <IncidentMap />
         <NewsSlider />
-        <View style={{ height: 240 }} />
+        <RecentActivity />
+        <View style={{ height: 140 }} />
       </ScrollView>
     </SafeAreaView>
   );

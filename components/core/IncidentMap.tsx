@@ -39,7 +39,7 @@ const IncidentMap = () => {
             <Entypo
               name="map"
               size={18}
-              color="#3B82F6"
+              color={COLORS.primary}
               style={styles.buttonIcon}
             />
             <Text style={styles.detailsText}>Xem chi tiết</Text>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   detailsText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: COLORS.gray800,
   },
 });
 
