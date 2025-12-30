@@ -12,7 +12,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   SectionList,
   StyleSheet,
@@ -20,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RAW_HISTORY = [
   {

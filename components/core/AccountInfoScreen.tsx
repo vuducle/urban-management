@@ -11,7 +11,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -20,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AccountInfoScreen() {
   const [notifications, setNotifications] = useState(true);

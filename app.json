@@ -13,7 +13,10 @@
       "bundleIdentifier": "com.vuducle.urbanmanagement",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "App cần quyền truy cập vị trí để báo cáo vị trí chính xác của vấn đề.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "App cần quyền truy cập vị trí để báo cáo vị trí chính xác của vấn đề."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "App cần quyền truy cập vị trí để báo cáo vị trí chính xác của vấn đề.",
+        "NSCameraUsageDescription": "App cần quyền truy cập camera để chụp ảnh các vấn đề.",
+        "NSPhotoLibraryUsageDescription": "App cần quyền truy cập thư viện ảnh để tải lên hình ảnh.",
+        "NSPhotoLibraryAddUsageDescription": "App cần quyền lưu ảnh vào thư viện."
       }
     },
     "android": {
@@ -28,7 +31,10 @@
       "package": "com.vuducle.urbanmanagement",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
