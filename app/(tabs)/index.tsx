@@ -19,7 +19,7 @@ export default function HomeScreen() {
         <IncidentMap />
         <NewsSlider />
         <RecentActivity />
-        <View style={{ height: 140 }} />
+        <View style={{ height: 50 }} />
       </ScrollView>
     </SafeAreaView>
   );
