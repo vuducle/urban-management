@@ -40,7 +40,7 @@ export default function AccountInfoScreen() {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
-        <View style={{ width: 40 }} />{' '}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

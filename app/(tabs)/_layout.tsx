@@ -199,6 +199,10 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: 'Tổng quan' }} />
       <Tabs.Screen name="ban-do" options={{ title: 'Bản đồ' }} />
       <Tabs.Screen name="lich-su" options={{ title: 'Lịch sử' }} />
+      <Tabs.Screen
+        name="notifications"
+        options={{ title: 'Thông báo' }}
+      />
       <Tabs.Screen name="ho-so" options={{ title: 'Hồ sơ' }} />
     </Tabs>
   );

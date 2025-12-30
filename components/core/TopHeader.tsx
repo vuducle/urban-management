@@ -5,6 +5,7 @@ import {
   SPACING,
 } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   Image,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 const TopHeader = () => {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       {/* Left section: Contains Avatar and Greeting Text */}
@@ -36,7 +38,10 @@ const TopHeader = () => {
       </View>
 
       {/* Right section: Notification Bell with Badge */}
-      <TouchableOpacity style={styles.notificationButton}>
+      <TouchableOpacity
+        onPress={() => router.push('/notifications')}
+        style={styles.notificationButton}
+      >
         <Ionicons
           name="notifications-outline"
           size={24}
