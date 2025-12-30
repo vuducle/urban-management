@@ -22,7 +22,7 @@ export default function RootLayout() {
   const router = useRouter();
   return (
     <ThemeProvider
-      value={colorScheme === '' ? DarkTheme : DefaultTheme}
+      value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
     >
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -34,10 +34,13 @@ export default function RootLayout() {
         <Stack.Screen
           name="modal"
           options={{
-            presentation: 'modal', // Lässt es von unten hochfahren
+            presentation: 'modal',
             headerTitle: 'Gửi phản ánh mới',
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()}>
+              <TouchableOpacity
+                style={{ marginLeft: 5 }}
+                onPress={() => router.back()}
+              >
                 <Ionicons
                   name="chevron-back"
                   size={24}
