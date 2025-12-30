@@ -1,8 +1,12 @@
+import AccountInfoScreen from '@/components/core/AccountInfoScreen';
 import React from 'react';
-import { Text } from 'react-native';
 
 function HoSo() {
-  return <Text>lich-su</Text>;
+  return (
+    <>
+      <AccountInfoScreen />
+    </>
+  );
 }
 
 export default HoSo;

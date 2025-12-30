@@ -276,6 +276,17 @@ const HistoryScreen = () => {
                 <Text style={styles.itemAddress} numberOfLines={1}>
                   {item.address}
                 </Text>
+                <Text
+                  style={[
+                    {
+                      color: COLORS.gray400,
+                      fontSize: 10,
+                      marginBottom: 4,
+                    },
+                  ]}
+                >
+                  {item.date}
+                </Text>
                 <View style={styles.footerRow}>
                   <View
                     style={[
