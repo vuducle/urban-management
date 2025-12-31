@@ -66,7 +66,6 @@ export default function CreateReportModal() {
             name: `ar_photo_${Date.now()}.jpg`,
         };
         setImages([...images, newImage]);
-        setIsARMode(false);
     };
 
     if (isARMode) {

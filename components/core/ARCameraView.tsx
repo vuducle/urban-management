@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView } from 'expo-camera'; // Aktuelle Expo-Empfehlung
-import { GLView } from 'expo-gl';
+import { Camera, CameraView } from 'expo-camera';
+import { EXGLContext, GLView } from 'expo-gl';
 import { Renderer } from 'expo-three';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,89 +12,238 @@ import {
 } from 'react-native';
 import * as THREE from 'three';
 
+// Get screen dimensions
+const { width: screenWidth, height: screenHeight } =
+  Dimensions.get('window');
+
 interface ARCameraViewProps {
   onClose: () => void;
   onCapture: (uri: string) => void;
 }
 
-type Shape = 'cube' | 'cylinder' | 'pipe';
+// Enum for measurement state
+enum MeasurementState {
+  WaitingForPointA,
+  WaitingForPointB,
+  Completed,
+}
 
 export default function ARCameraView({
   onClose,
   onCapture,
 }: ARCameraViewProps) {
-  const cameraRef = useRef<any>(null);
-  const [shape, setShape] = useState<Shape>('cube');
+  const cameraRef = useRef<CameraView>(null);
+  const glRef = useRef<EXGLContext | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(
+    null
+  );
+  const animationFrameId = useRef<number>();
+  const pointsRef = useRef<THREE.Vector3[]>([]);
+  const [displayDistance, setDisplayDistance] = useState<number>(0);
 
-  const onContextCreate = async (gl: any) => {
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      gl.drawingBufferWidth / gl.drawingBufferHeight,
-      0.1,
-      1000
-    );
-    const renderer = new Renderer({ gl });
+  // Ruler feature state
+  const [measurementState, setMeasurementState] =
+    useState<MeasurementState>(MeasurementState.WaitingForPointA);
+  const [points, setPoints] = useState<THREE.Vector3[]>([]);
+  const [distance, setDistance] = useState<number>(0);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, []);
+
+  const onContextCreate = async (gl: EXGLContext) => {
+    glRef.current = gl;
+    const { drawingBufferWidth: width, drawingBufferHeight: height } =
+      gl;
+
+    const renderer = new Renderer({ gl, alpha: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
-    let geometry: THREE.BufferGeometry;
-    switch (shape) {
-      case 'cube':
-        geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        break;
-      case 'cylinder':
-        geometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 32);
-        break;
-      case 'pipe':
-        geometry = new THREE.CylinderGeometry(
-          0.3,
-          0.3,
-          0.8,
-          32,
-          1,
-          true
-        );
-        break;
-      default:
-        geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    }
+    const scene = new THREE.Scene();
+    const threeCamera = new THREE.PerspectiveCamera(
+      75,
+      width / height,
+      0.01,
+      1000
+    );
 
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      wireframe: true,
+    // if (gl.createCameraTextureAsync && cameraRef.current) {
+    //   const cameraTexture = await gl.createCameraTextureAsync(
+    //     cameraRef.current
+    //   );
+
+    //   // In Three.js einbinden
+    //   const texture = new THREE.Texture();
+    //   texture.image = {
+    //     data: cameraTexture,
+    //     width: gl.drawingBufferWidth,
+    //     height: gl.drawingBufferHeight,
+    //   };
+    //   texture.needsUpdate = true;
+    //   scene.background = texture;
+    // }
+
+    // --- Ruler feature objects ---
+    const pointsGroup = new THREE.Group(); // To hold spheres
+    scene.add(pointsGroup);
+    const lineGroup = new THREE.Group(); // To hold the line
+    scene.add(lineGroup);
+
+    const sphereGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
     });
-    const marker = new THREE.Mesh(geometry, material);
-    marker.position.z = -3;
-    scene.add(marker);
 
-    const render = () => {
-      requestAnimationFrame(render);
-      renderer.render(scene, camera);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x00ff00,
+      linewidth: 2,
+    });
+
+    // This plane is used for raycasting to place points in 3D space
+    const raycastPlane = new THREE.Plane(
+      new THREE.Vector3(0, 0, 1),
+      3
+    );
+    const raycaster = new THREE.Raycaster();
+    // --- End of Ruler objects ---
+
+    const animate = () => {
+      animationFrameId.current = requestAnimationFrame(animate);
+
+      // Wichtig: Gruppe leeren
+      pointsGroup.clear();
+      lineGroup.clear();
+
+      const currentPoints = pointsRef.current;
+
+      currentPoints.forEach((point) => {
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.copy(point);
+        pointsGroup.add(sphere);
+      });
+
+      if (currentPoints.length === 2) {
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(
+          currentPoints
+        );
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        lineGroup.add(line);
+      }
+
+      renderer.render(scene, threeCamera);
       gl.endFrameEXP();
     };
-    render();
+    animate();
   };
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-      });
-      onCapture(photo.uri);
+  const handleTouch = (event: any) => {
+    if (measurementState === MeasurementState.Completed) return;
+
+    const { locationX, locationY } = event.nativeEvent;
+
+    // 1. Koordinaten normalisieren
+    const mouse = new THREE.Vector2();
+    mouse.x = (locationX / screenWidth) * 2 - 1;
+    mouse.y = -(locationY / screenHeight) * 2 + 1;
+
+    // 2. Nutze eine Kamera mit denselben Werten wie im Renderer
+    const tempCamera = new THREE.PerspectiveCamera(
+      75,
+      screenWidth / screenHeight,
+      0.01,
+      1000
+    );
+    tempCamera.position.z = 0; // Kamera ist im Ursprung
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, tempCamera);
+
+    // 3. Eine virtuelle Ebene 3 Einheiten vor der Kamera (Z = -3)
+    // Der Normalenvektor zeigt zur Kamera (0, 0, 1), der Abstand ist 3
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 3);
+    const intersectionPoint = new THREE.Vector3();
+
+    if (raycaster.ray.intersectPlane(plane, intersectionPoint)) {
+      // Punkt zum State hinzufügen
+      setPoints((prev) => [...prev, intersectionPoint.clone()]);
+
+      // Status-Update
+      if (measurementState === MeasurementState.WaitingForPointA) {
+        setMeasurementState(MeasurementState.WaitingForPointB);
+      } else {
+        setMeasurementState(MeasurementState.Completed);
+      }
+    }
+
+    if (intersectionPoint) {
+      const newPoints = [
+        ...pointsRef.current,
+        intersectionPoint.clone(),
+      ];
+      pointsRef.current = newPoints; // Ref sofort updaten
+
+      if (measurementState === MeasurementState.WaitingForPointA) {
+        setMeasurementState(MeasurementState.WaitingForPointB);
+      } else {
+        // Berechnung der Distanz
+        const dist = newPoints[0].distanceTo(newPoints[1]);
+        setDistance(dist); // Für die Logik
+        setDisplayDistance(dist); // Für die UI
+        setMeasurementState(MeasurementState.Completed);
+      }
     }
   };
 
+  const resetMeasurement = () => {
+    setPoints([]);
+    setDistance(0);
+    setMeasurementState(MeasurementState.WaitingForPointA);
+  };
+
+  const getInstructionText = () => {
+    switch (measurementState) {
+      case MeasurementState.WaitingForPointA:
+        return 'Tippe, um den ersten Punkt zu setzen';
+      case MeasurementState.WaitingForPointB:
+        return 'Tippe, um den zweiten Punkt zu setzen';
+      case MeasurementState.Completed:
+        return `Distanz: ${distance.toFixed(2)} Einheiten`;
+    }
+  };
+
+  if (hasPermission === null || hasPermission === false) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.permissionText}>
+          Kamerazugriff wird benötigt
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} />
-
-      <GLView
+    <View style={styles.fullScreen} onTouchEnd={handleTouch}>
+      <CameraView
         style={StyleSheet.absoluteFill}
-        onContextCreate={onContextCreate}
-        key={shape}
-      />
-
-      <View style={styles.overlay} pointerEvents="box-none">
+        facing="back"
+        ref={cameraRef}
+      >
+        <GLView
+          style={StyleSheet.absoluteFill}
+          onContextCreate={onContextCreate}
+        />
+      </CameraView>
+      <View style={styles.overlay}>
+        {/* Top UI */}
         <View style={styles.topControls}>
           <TouchableOpacity
             style={styles.closeButton}
@@ -101,34 +251,19 @@ export default function ARCameraView({
           >
             <Ionicons name="close" size={32} color="white" />
           </TouchableOpacity>
-          <View style={styles.shapeButtons}>
-            <TouchableOpacity
-              style={styles.shapeButton}
-              onPress={() => setShape('cube')}
-            >
-              <Text style={styles.shapeButtonText}>Cube</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.shapeButton}
-              onPress={() => setShape('cylinder')}
-            >
-              <Text style={styles.shapeButtonText}>Cylinder</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.shapeButton}
-              onPress={() => setShape('pipe')}
-            >
-              <Text style={styles.shapeButtonText}>Pipe</Text>
-            </TouchableOpacity>
+          <View style={styles.instructionBox}>
+            <Text style={styles.instructionText}>
+              {getInstructionText()}
+            </Text>
           </View>
+          <TouchableOpacity
+            style={styles.resetButton}
+            onPress={resetMeasurement}
+          >
+            <Ionicons name="refresh" size={28} color="white" />
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.captureButton}
-          onPress={takePicture}
-        >
-          <View style={styles.captureInternal} />
-        </TouchableOpacity>
+        {/* Bottom UI can be added here if needed */}
       </View>
     </View>
   );
@@ -136,45 +271,39 @@ export default function ARCameraView({
 
 const styles = StyleSheet.create({
   fullScreen: { flex: 1, backgroundColor: 'black' },
-  container: {
+  centered: {
     flex: 1,
-  },
-
-  overlay: {
-    flex: 1,
-    justifyContent: 'space-between',
-    padding: 40,
+    backgroundColor: 'black',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+  },
+  permissionText: { color: 'white', fontSize: 16 },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 20,
   },
   topControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginTop: 20,
+    marginTop: 40,
   },
-  closeButton: { alignSelf: 'flex-start' },
-  shapeButtons: { flexDirection: 'row', gap: 10 },
-  shapeButton: {
-    padding: 10,
+  closeButton: { padding: 5 },
+  resetButton: { padding: 5 },
+  instructionBox: {
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
-  shapeButtonText: { color: 'white' },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 4,
-    borderColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureInternal: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'white',
+  instructionText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
