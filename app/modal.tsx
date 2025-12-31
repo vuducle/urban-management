@@ -24,7 +24,8 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 
 //feature threejs
-import ARCameraView from "@/components/core/ARCameraView";
+import ARCameraView from '@/components/core/ARCameraView';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 interface LocationResult {
   address: string;
@@ -59,18 +60,25 @@ export default function CreateReportModal() {
 
   const [isARMode, setIsARMode] = useState<boolean>(false);
 
-    const handleARCapture = (uri: string) => {
-        const newImage: UploadedImage = {
-            uri,
-            type: 'image',
-            name: `ar_photo_${Date.now()}.jpg`,
-        };
-        setImages([...images, newImage]);
+  const handleARCapture = (uri: string) => {
+    const newImage: UploadedImage = {
+      uri,
+      type: 'image',
+      name: `ar_photo_${Date.now()}.jpg`,
     };
+    setImages([...images, newImage]);
+  };
 
-    if (isARMode) {
-        return <ARCameraView onClose={() => setIsARMode(false)} onCapture={handleARCapture} />;
-    }
+  if (isARMode) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ARCameraView
+          onClose={() => setIsARMode(false)}
+          onCapture={handleARCapture}
+        />
+      </GestureHandlerRootView>
+    );
+  }
 
   // Pick image from library
   const pickImage = async () => {
@@ -427,26 +435,28 @@ export default function CreateReportModal() {
         </TouchableOpacity>
 
         <TouchableOpacity
-            style={[
-                styles.uploadBtn,
-                images.length >= 5 && styles.uploadBtnDisabled,
-            ]}
-            onPress={() => setIsARMode(true)}
-            disabled={images.length >= 5}
+          style={[
+            styles.uploadBtn,
+            images.length >= 5 && styles.uploadBtnDisabled,
+          ]}
+          onPress={() => setIsARMode(true)}
+          disabled={images.length >= 5}
         >
-            <Ionicons
-                name="cube"
-                size={24}
-                color={images.length >= 5 ? COLORS.gray400 : COLORS.primary}
-            />
-            <Text
-                style={[
-                    styles.uploadBtnText,
-                    images.length >= 5 && { color: COLORS.gray400 },
-                ]}
-            >
-                AR View
-            </Text>
+          <Ionicons
+            name="cube"
+            size={24}
+            color={
+              images.length >= 5 ? COLORS.gray400 : COLORS.primary
+            }
+          />
+          <Text
+            style={[
+              styles.uploadBtnText,
+              images.length >= 5 && { color: COLORS.gray400 },
+            ]}
+          >
+            AR View
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
