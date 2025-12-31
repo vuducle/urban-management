@@ -23,6 +23,9 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
+//feature threejs
+import ARCameraView from "@/components/core/ARCameraView";
+
 interface LocationResult {
   address: string;
   latitude: number;
@@ -53,6 +56,22 @@ export default function CreateReportModal() {
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
+
+  const [isARMode, setIsARMode] = useState<boolean>(false);
+
+    const handleARCapture = (uri: string) => {
+        const newImage: UploadedImage = {
+            uri,
+            type: 'image',
+            name: `ar_photo_${Date.now()}.jpg`,
+        };
+        setImages([...images, newImage]);
+        setIsARMode(false);
+    };
+
+    if (isARMode) {
+        return <ARCameraView onClose={() => setIsARMode(false)} onCapture={handleARCapture} />;
+    }
 
   // Pick image from library
   const pickImage = async () => {
@@ -406,6 +425,29 @@ export default function CreateReportModal() {
           >
             Chụp ảnh
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+            style={[
+                styles.uploadBtn,
+                images.length >= 5 && styles.uploadBtnDisabled,
+            ]}
+            onPress={() => setIsARMode(true)}
+            disabled={images.length >= 5}
+        >
+            <Ionicons
+                name="cube"
+                size={24}
+                color={images.length >= 5 ? COLORS.gray400 : COLORS.primary}
+            />
+            <Text
+                style={[
+                    styles.uploadBtnText,
+                    images.length >= 5 && { color: COLORS.gray400 },
+                ]}
+            >
+                AR View
+            </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
