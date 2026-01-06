@@ -72,10 +72,7 @@ export default function CreateReportModal() {
   if (isARMode) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <ARCameraView
-          onClose={() => setIsARMode(false)}
-          onCapture={handleARCapture}
-        />
+        <ARCameraView onClose={() => setIsARMode(false)} />
       </GestureHandlerRootView>
     );
   }

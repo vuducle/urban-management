@@ -1,460 +1,292 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Camera, CameraView } from 'expo-camera';
-import { ExpoWebGLRenderingContext, GLView } from 'expo-gl';
-import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { Renderer } from 'expo-three';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
-import * as THREE from 'three';
-import { ARMode, RulerMode } from './ARMeasurementMode';
-import { XRayMode } from './ARXRayMode';
 
-const { width: screenWidth, height: screenHeight } =
-  Dimensions.get('window');
+// Import ViroReact (without custom material system)
+import {
+  ViroARScene,
+  ViroARSceneNavigator,
+  ViroPolyline,
+  ViroSphere,
+  ViroText,
+  ViroTrackingStateConstants,
+} from '@reactvision/react-viro';
 
-// Enum for the state of the measurement process
-enum MeasurementState {
-  Idle,
-  FirstPointSet,
-  Completed,
-}
+// --- AR SCENE COMPONENT (extracted for clarity) ---
+// Simple measurement scene like Apple Measure app
+const MeasurementScene = (props: any) => {
+  const { points, distance, onInitialized, onCameraTransformUpdate } =
+    props.sceneNavigator.viroAppProps;
 
-interface ARCameraViewProps {
+  console.log('Scene rendering with points:', points.length);
+
+  return (
+    <ViroARScene
+      onTrackingUpdated={onInitialized}
+      onCameraTransformUpdate={onCameraTransformUpdate}
+    >
+      {/* Render measurement points as visible spheres */}
+      {points.map((point: any) => (
+        <ViroSphere
+          key={point.id}
+          position={point.position}
+          radius={0.05}
+          widthSegmentCount={20}
+          heightSegmentCount={20}
+        />
+      ))}
+
+      {/* Render line between two points */}
+      {points.length === 2 && (
+        <>
+          <ViroPolyline
+            points={[points[0].position, points[1].position]}
+            thickness={0.02}
+          />
+          {/* Distance label in 3D space */}
+          <ViroText
+            text={formatDistanceHelper(distance)}
+            position={[
+              (points[0].position[0] + points[1].position[0]) / 2,
+              (points[0].position[1] + points[1].position[1]) / 2 +
+                0.15,
+              (points[0].position[2] + points[1].position[2]) / 2,
+            ]}
+            scale={[0.2, 0.2, 0.2]}
+            style={styles.textStyle}
+          />
+        </>
+      )}
+    </ViroARScene>
+  );
+};
+
+// Hilfsfunktion
+const formatDistanceHelper = (meters: number): string => {
+  if (meters < 1) return `${(meters * 100).toFixed(0)} cm`;
+  return `${meters.toFixed(2)} m`;
+};
+
+// --- MAIN AR CAMERA VIEW COMPONENT ---
+export default function ARCameraView({
+  onClose,
+}: {
   onClose: () => void;
-}
-
-/**
- * @component ARCameraView
- * @description A full-screen component that provides an augmented reality experience.
- * It supports different modes like Ruler and X-Ray (placeholder).
- */
-export default function ARCameraView({ onClose }: ARCameraViewProps) {
-  // Refs for THREE.js objects and camera
-  const cameraRef = useRef<CameraView>(null);
+}) {
   const viewRef = useRef<View>(null);
-  const glRef = useRef<ExpoWebGLRenderingContext | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<Renderer | null>(null);
-  const threeCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const animationFrameId = useRef<number | undefined>(undefined);
+  const arSceneRef = useRef<any>(null);
+  const cameraPositionRef = useRef<any>(null);
 
-  // State management
-  const [hasPermission, setHasPermission] = useState<boolean | null>(
-    null
-  );
-  const [currentMode, setCurrentMode] = useState<ARMode>(
-    ARMode.Ruler
-  );
-  const [measurementState, setMeasurementState] =
-    useState<MeasurementState>(MeasurementState.Idle);
+  // Measurement state
+  const [points, setPoints] = useState<any[]>([]);
   const [distance, setDistance] = useState<number>(0);
+  const [isTracking, setIsTracking] = useState(false);
 
-  // Mode handlers
-  const rulerModeRef = useRef<RulerMode>(new RulerMode());
-  const xrayModeRef = useRef<XRayMode>(new XRayMode());
-
-  // Request camera permissions on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-
-    return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
-    };
-  }, []);
-
-  /**
-   * @method onContextCreate
-   * @description Initializes the THREE.js scene, renderer, and camera.
-   * This is called once the GLView is ready.
-   */
-  const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
-    glRef.current = gl;
-    const { drawingBufferWidth: width, drawingBufferHeight: height } =
-      gl;
-
-    // Renderer setup
-    const renderer = new Renderer({ gl, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0);
-    rendererRef.current = renderer;
-
-    // Scene and Camera setup
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      width / height,
-      0.01,
-      100
-    );
-    threeCameraRef.current = camera;
-
-    // Object groups for organization
-    const pointsGroup = new THREE.Group();
-    scene.add(pointsGroup);
-    const linesGroup = new THREE.Group();
-    scene.add(linesGroup);
-    const previewGroup = new THREE.Group();
-    scene.add(previewGroup);
-
-    // Materials for points and lines
-    const pointMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-    });
-    const lineMaterial = new THREE.LineBasicMaterial({
-      color: 0xffff00,
-      linewidth: 3,
-    });
-    const previewLineMaterial = new THREE.LineBasicMaterial({
-      color: 0xffff00,
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.7,
-    });
-
-    // Main render loop
-    const animate = () => {
-      animationFrameId.current = requestAnimationFrame(animate);
-
-      // Clear groups before re-rendering
-      pointsGroup.clear();
-      linesGroup.clear();
-      previewGroup.clear();
-
-      if (currentMode === ARMode.Ruler && threeCameraRef.current) {
-        // Update the preview line from point A to the cursor
-        rulerModeRef.current.updatePreview(
-          threeCameraRef.current,
-          screenWidth,
-          screenHeight
-        );
-        const measurement = rulerModeRef.current.getMeasurement();
-
-        // Render points
-        if (measurement.pointA) {
-          const sphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.02, 16, 16),
-            pointMaterial
-          );
-          sphere.position.copy(measurement.pointA.position);
-          pointsGroup.add(sphere);
-        }
-        if (measurement.pointB) {
-          const sphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.02, 16, 16),
-            pointMaterial
-          );
-          sphere.position.copy(measurement.pointB.position);
-          pointsGroup.add(sphere);
-        }
-
-        // Render the final measurement line
-        if (measurement.pointA && measurement.pointB) {
-          const lineGeometry =
-            new THREE.BufferGeometry().setFromPoints([
-              measurement.pointA.position,
-              measurement.pointB.position,
-            ]);
-          const line = new THREE.Line(lineGeometry, lineMaterial);
-          linesGroup.add(line);
-        }
-
-        // Update distance in state (including preview distance)
-        if (measurement.distance > 0) {
-          setDistance(measurement.distance);
-        }
-
-        // Render the preview line
-        if (measurement.previewLine) {
-          const { start, end } = measurement.previewLine;
-          const previewLineGeo =
-            new THREE.BufferGeometry().setFromPoints([start, end]);
-          const previewLine = new THREE.Line(
-            previewLineGeo,
-            previewLineMaterial
-          );
-          previewGroup.add(previewLine);
-
-          // Add endpoint sphere for preview
-          const endSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.015, 16, 16),
-            new THREE.MeshBasicMaterial({
-              color: 0xffff00,
-              transparent: true,
-              opacity: 0.7,
-            })
-          );
-          endSphere.position.copy(end);
-          previewGroup.add(endSphere);
-        }
-      }
-
-      renderer.render(scene, camera);
-      gl.endFrameEXP();
-    };
-
-    animate();
-  };
-
-  /**
-   * @method handleAddPoint
-   * @description Adds a new measurement point at the center of the screen.
-   * This is triggered by the user pressing the "Add Point" button.
-   */
-  const handleAddPoint = () => {
-    if (currentMode !== ARMode.Ruler || !threeCameraRef.current)
-      return;
-
-    if (measurementState === MeasurementState.Idle) {
-      rulerModeRef.current.addPoint(
-        screenWidth / 2,
-        screenHeight / 2,
-        threeCameraRef.current,
-        screenWidth,
-        screenHeight
+  const onInitialized = (state: any, reason: any) => {
+    console.log('AR Tracking State:', state, 'Reason:', reason);
+    if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
+      console.log('✅ AR Tracking Normal - Ready to measure');
+      setIsTracking(true);
+    } else {
+      console.log(
+        '⚠️ AR Tracking NOT normal - Move device to scan surfaces'
       );
-      setMeasurementState(MeasurementState.FirstPointSet);
-      console.log('First point added');
-    } else if (measurementState === MeasurementState.FirstPointSet) {
-      rulerModeRef.current.addPoint(
-        screenWidth / 2,
-        screenHeight / 2,
-        threeCameraRef.current,
-        screenWidth,
-        screenHeight
-      );
-      setMeasurementState(MeasurementState.Completed);
-      console.log('Second point added, measurement complete');
+      setIsTracking(false);
     }
   };
 
-  /**
-   * @method handleSave
-   * @description Captures the current view and saves it to the device.
-   */
-  const handleSave = async () => {
-    if (!viewRef.current) return;
+  // Track camera position and forward direction
+  const onCameraTransformUpdate = (cameraTransform: any) => {
+    cameraPositionRef.current = cameraTransform;
+  };
+
+  const calculateDistance = (p1: number[], p2: number[]) => {
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const dz = p2[2] - p1[2];
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  };
+
+  // Place point at center - calculate position from camera
+  const addPointAtCenter = () => {
+    if (!cameraPositionRef.current) {
+      console.log('❌ Camera position not available yet');
+      Alert.alert('Not Ready', 'Wait for AR tracking to initialize');
+      return;
+    }
 
     try {
-      // Capture the view as an image
-      const uri = await captureRef(viewRef, {
+      console.log('🎯 Placing point from camera center...');
+
+      const camTransform = cameraPositionRef.current;
+      const camPos = camTransform.position;
+      const camForward = camTransform.forward;
+
+      // Place point 0.5 meters in front of camera in the direction it's facing
+      const dist = 0.5;
+      const hitPosition = [
+        camPos[0] + camForward[0] * dist,
+        camPos[1] + camForward[1] * dist,
+        camPos[2] + camForward[2] * dist,
+      ];
+
+      console.log('✅ Placing point at:', hitPosition);
+
+      setPoints((curr) => {
+        if (curr.length >= 2) {
+          console.log('Resetting - starting new measurement');
+          return [{ position: hitPosition, id: Math.random() }];
+        }
+
+        const newPts = [
+          ...curr,
+          { position: hitPosition, id: Math.random() },
+        ];
+        console.log('📍 Points count:', newPts.length);
+
+        if (newPts.length === 2) {
+          const calculatedDist = calculateDistance(
+            newPts[0].position,
+            newPts[1].position
+          );
+          console.log('📏 Distance:', calculatedDist, 'meters');
+          setDistance(calculatedDist);
+        }
+
+        return newPts;
+      });
+    } catch (error) {
+      console.log('❌ Error placing point:', error);
+      Alert.alert('Error', 'Could not place point');
+    }
+  };
+
+  const resetMeasurement = () => {
+    console.log('🔄 Resetting measurement');
+    setPoints([]);
+    setDistance(0);
+  };
+
+  const takeScreenshot = async () => {
+    if (!viewRef.current) return;
+    try {
+      const uri = await captureRef(viewRef.current, {
         format: 'png',
         quality: 1,
       });
-
-      // Request media library permissions
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-
-      if (status === 'granted') {
-        // Save to media library
-        await MediaLibrary.saveToLibraryAsync(uri);
-        Alert.alert(
-          'Erfolg',
-          'Messung wurde in der Galerie gespeichert!'
-        );
-      } else {
-        // If no permission, try to share instead
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          await Sharing.shareAsync(uri);
-        } else {
-          Alert.alert('Fehler', 'Keine Berechtigung zum Speichern');
-        }
-      }
-
-      // Reset after saving
-      handleReset();
-    } catch (error) {
-      console.error('Error saving measurement:', error);
-      Alert.alert(
-        'Fehler',
-        'Messung konnte nicht gespeichert werden'
-      );
+      if (await Sharing.isAvailableAsync())
+        await Sharing.shareAsync(uri);
+    } catch (e) {
+      Alert.alert('Error', 'Screenshot failed');
     }
   };
-
-  /**
-   * @method handleReset
-   * @description Resets the current AR mode to its initial state.
-   */
-  const handleReset = () => {
-    if (currentMode === ARMode.Ruler) {
-      rulerModeRef.current.reset();
-      setMeasurementState(MeasurementState.Idle);
-      setDistance(0);
-    } else if (currentMode === ARMode.XRay) {
-      xrayModeRef.current.reset();
-    }
-  };
-
-  /**
-   * @method handleModeSwitch
-   * @description Switches between available AR modes.
-   */
-  const handleModeSwitch = (mode: ARMode) => {
-    handleReset();
-    setCurrentMode(mode);
-  };
-
-  /**
-   * @method getInstructionText
-   * @description Returns the instructional text based on the current state.
-   */
-  const getInstructionText = () => {
-    if (currentMode === ARMode.XRay) {
-      return 'X-Ray Mode (Coming Soon)';
-    }
-
-    switch (measurementState) {
-      case MeasurementState.Idle:
-        return 'Punkt 1 setzen';
-      case MeasurementState.FirstPointSet:
-        const previewDistInCm = distance * 100;
-        return previewDistInCm < 100
-          ? `${previewDistInCm.toFixed(1)} cm`
-          : `${distance.toFixed(2)} m`;
-      case MeasurementState.Completed:
-        const distInCm = distance * 100;
-        return distInCm < 100
-          ? `${distInCm.toFixed(1)} cm`
-          : `${distance.toFixed(2)} m`;
-    }
-  };
-
-  if (hasPermission === null) {
-    return <View style={styles.centered} />;
-  }
-  if (hasPermission === false) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.permissionText}>No access to camera</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.fullScreen} ref={viewRef}>
-      <CameraView
+      <ViroARSceneNavigator
+        ref={arSceneRef}
+        autofocus={true}
+        initialScene={{ scene: MeasurementScene }}
+        viroAppProps={{
+          points,
+          distance,
+          onInitialized,
+          onCameraTransformUpdate,
+        }}
         style={StyleSheet.absoluteFill}
-        facing="back"
-        ref={cameraRef}
-      >
-        <GLView
-          style={StyleSheet.absoluteFill}
-          onContextCreate={onContextCreate}
-        />
-      </CameraView>
+      />
 
-      {/* Crosshair in the center of the screen */}
-      <View style={styles.crosshair} pointerEvents="none">
-        <Ionicons name="add" size={30} color="white" />
-      </View>
-
+      {/* Overlay UI - Simple like Apple Measure */}
       <View style={styles.overlay} pointerEvents="box-none">
-        {/* Top bar with close, instructions, and reset */}
-        <View style={styles.topBar}>
+        {/* Center crosshair - like Apple Measure */}
+        <View style={styles.centerCrosshair} pointerEvents="none">
+          <View style={styles.crosshairDot} />
+          <View style={styles.crosshairRingOuter}>
+            <View style={styles.crosshairRingInner} />
+          </View>
+        </View>
+
+        {/* Top bar with close and reset */}
+        <View style={styles.topBar} pointerEvents="box-none">
           <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.closeButton}
             onPress={onClose}
           >
-            <Ionicons name="close" size={32} color="white" />
+            <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
-          <View style={styles.instructionBox}>
-            <Text style={styles.instructionText}>
-              {getInstructionText()}
-            </Text>
-          </View>
+
+          {/* Show distance when both points are set */}
+          {points.length === 2 && (
+            <View style={styles.distanceDisplay}>
+              <Text style={styles.measurementText}>
+                {formatDistanceHelper(distance)}
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleReset}
+            style={styles.resetButton}
+            onPress={resetMeasurement}
           >
-            <Ionicons name="refresh" size={28} color="white" />
+            <Ionicons name="refresh" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Bottom controls */}
+        {/* Bottom instruction panel */}
         <View style={styles.bottomBar}>
-          {/* Mode selectors */}
-          <View style={styles.modeSelector}>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                currentMode === ARMode.Ruler &&
-                  styles.modeButtonActive,
-              ]}
-              onPress={() => handleModeSwitch(ARMode.Ruler)}
-            >
-              <Ionicons
-                name="resize-outline"
-                size={24}
-                color={
-                  currentMode === ARMode.Ruler ? '#00ff00' : 'white'
-                }
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                currentMode === ARMode.XRay &&
-                  styles.modeButtonActive,
-              ]}
-              onPress={() => handleModeSwitch(ARMode.XRay)}
-            >
-              <Ionicons
-                name="scan-outline"
-                size={24}
-                color={
-                  currentMode === ARMode.XRay ? '#00ff00' : 'white'
-                }
-              />
-            </TouchableOpacity>
-          </View>
+          {!isTracking ? (
+            <View style={styles.instructionPanel}>
+              <Text style={styles.instructionText}>
+                Move device to scan surfaces
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.instructionPanel}>
+                {points.length === 0 && (
+                  <Text style={styles.instructionText}>
+                    Point at surface, then tap + button
+                  </Text>
+                )}
+                {points.length === 1 && (
+                  <Text style={styles.instructionText}>
+                    Move to end point and tap +
+                  </Text>
+                )}
+                {points.length === 2 && (
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={takeScreenshot}
+                  >
+                    <Ionicons
+                      name="download-outline"
+                      size={20}
+                      color="white"
+                    />
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
-          {/* Add Point button */}
-          {currentMode === ARMode.Ruler &&
-            measurementState !== MeasurementState.Completed && (
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddPoint}
-              >
-                <Ionicons name="add-circle" size={60} color="white" />
-              </TouchableOpacity>
-            )}
-
-          {/* Save button when measurement is complete */}
-          {currentMode === ARMode.Ruler &&
-            measurementState === MeasurementState.Completed && (
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSave}
-              >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={60}
-                  color="#00ff00"
-                />
-                <Text style={styles.saveButtonText}>Speichern</Text>
-              </TouchableOpacity>
-            )}
-
-          {/* Placeholder for other mode's buttons */}
-          <View style={styles.rightActions}>
-            {/* Future buttons can go here */}
-          </View>
+              {/* Big add point button - like Apple Measure */}
+              {points.length < 2 && (
+                <TouchableOpacity
+                  style={styles.addPointButton}
+                  onPress={addPointAtCenter}
+                >
+                  <Ionicons name="add" size={32} color="white" />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -463,96 +295,128 @@ export default function ARCameraView({ onClose }: ARCameraViewProps) {
 
 const styles = StyleSheet.create({
   fullScreen: { flex: 1, backgroundColor: 'black' },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
+  textStyle: {
+    fontFamily: 'System',
+    fontSize: 24,
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
-  permissionText: { color: 'white', fontSize: 18 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
-  crosshair: {
+  centerCrosshair: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    width: 40,
-    height: 40,
-    marginLeft: -20,
-    marginTop: -20,
-    justifyContent: 'center',
+    width: 60,
+    height: 60,
+    marginLeft: -30,
+    marginTop: -30,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crosshairDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'white',
+    position: 'absolute',
+  },
+  crosshairRingOuter: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crosshairRingInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: 60,
+    alignItems: 'center',
   },
-  instructionBox: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  closeButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resetButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  distanceDisplay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  measurementText: {
+    color: 'white',
+    fontSize: 48,
+    fontWeight: '300',
+    fontVariant: ['tabular-nums'],
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  bottomBar: {
+    paddingBottom: 60,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  instructionPanel: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 25,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    minWidth: 250,
+    alignItems: 'center',
   },
   instructionText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  iconButton: {
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 25,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: 50,
-    paddingHorizontal: 20,
-  },
-  modeSelector: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 30,
-    padding: 5,
-  },
-  modeButton: {
-    padding: 10,
-    borderRadius: 20,
-  },
-  modeButtonActive: {
-    backgroundColor: 'rgba(0,255,0,0.2)',
-  },
-  addButton: {
-    position: 'absolute',
-    alignSelf: 'center',
-    left: '50%',
-    transform: [{ translateX: -30 }], // Center the button
-    bottom: -10,
+    fontSize: 17,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   saveButton: {
-    position: 'absolute',
-    alignSelf: 'center',
-    left: '50%',
-    transform: [{ translateX: -30 }],
-    bottom: -10,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#00ff00',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: -10,
-  },
-  rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 8,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  addPointButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
 });
