@@ -13,7 +13,7 @@ import { captureRef } from 'react-native-view-shot';
 // Import ViroReact
 import {
   ViroARScene,
-  ViroARSceneNavigator, // Optional, falls benötigt
+  ViroARSceneNavigator,
   ViroNode,
   ViroPolyline,
   ViroSphere,
@@ -202,7 +202,7 @@ export default function ARCameraView({
   };
 
   return (
-    <View style={styles.fullScreen} ref={viewRef}>
+    <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
       <ViroARSceneNavigator
         ref={arSceneRef}
         autofocus={true}
@@ -222,12 +222,13 @@ export default function ARCameraView({
             : null,
         }}
         style={StyleSheet.absoluteFill}
+        collapsable={false}
       />
 
       {/* Overlay UI */}
       <View style={styles.overlay} pointerEvents="box-none">
         {/* Mode toggle */}
-        <View style={styles.modeToggle}>
+        <View style={styles.modeToggle} pointerEvents="auto">
           <TouchableOpacity
             style={[
               styles.modeButton,
@@ -239,7 +240,7 @@ export default function ARCameraView({
               setDistance(0);
             }}
           >
-            <Text style={styles.modeButtonText}>Messen</Text>
+            <Text style={styles.modeButtonText}>Đo</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -248,7 +249,7 @@ export default function ARCameraView({
             ]}
             onPress={() => setMode('model')}
           >
-            <Text style={styles.modeButtonText}>Modell</Text>
+            <Text style={styles.modeButtonText}>Mô hình</Text>
           </TouchableOpacity>
         </View>
 
@@ -263,7 +264,7 @@ export default function ARCameraView({
         )}
 
         {/* Top bar */}
-        <View style={styles.topBar} pointerEvents="box-none">
+        <View style={styles.topBar} pointerEvents="auto">
           <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
@@ -289,7 +290,7 @@ export default function ARCameraView({
 
         {/* Bottom instruction panel */}
         {mode === 'measure' && (
-          <View style={styles.bottomBar}>
+          <View style={styles.bottomBar} pointerEvents="auto">
             {!isTracking ? (
               <View style={styles.instructionPanel}>
                 <Text style={styles.instructionText}>
@@ -360,13 +361,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 50, // Safe Area Top
     gap: 10,
-    zIndex: 10,
+    zIndex: 200,
   },
   modeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    minWidth: 80,
   },
   modeButtonActive: {
     backgroundColor: 'white',
@@ -423,20 +425,20 @@ const styles = StyleSheet.create({
     top: 50,
     width: '100%',
     alignItems: 'center',
-    zIndex: 5,
+    zIndex: 150,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   resetButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -446,6 +448,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderRadius: 10,
+    position: 'absolute',
+    left: '50%',
+    transform: [{ translateY: '200%' }, { translateX: '-50%' }],
   },
   measurementText: {
     color: 'white',
@@ -460,6 +465,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
     width: '100%',
+    zIndex: 100,
   },
   instructionPanel: {
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -486,9 +492,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addPointButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
