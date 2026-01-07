@@ -7,14 +7,45 @@ import {
 import Entypo from '@expo/vector-icons/Entypo';
 import React from 'react';
 import {
-  ImageBackground,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import MapView, {
+  Marker,
+  PROVIDER_APPLE,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 
 const IncidentMap = () => {
+  // Example incidents - replace with your actual data
+  const incidents = [
+    {
+      id: '1',
+      latitude: 21.0285,
+      longitude: 105.8542,
+      title: 'Sự cố 1',
+    },
+    {
+      id: '2',
+      latitude: 21.0245,
+      longitude: 105.8412,
+      title: 'Sự cố 2',
+    },
+    {
+      id: '3',
+      latitude: 21.0325,
+      longitude: 105.8622,
+      title: 'Sự cố 3',
+    },
+  ];
+
+  // Use Apple Maps on iOS, Google Maps on Android
+  const provider =
+    Platform.OS === 'ios' ? PROVIDER_APPLE : PROVIDER_GOOGLE;
+
   return (
     <View style={styles.wrapper}>
       {/* Header Section */}
@@ -27,24 +58,39 @@ const IncidentMap = () => {
 
       {/* Map Container */}
       <View style={styles.mapContainer}>
-        <ImageBackground
-          source={{
-            uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqPgCo-aBg45sE1k7veJtSp6zTgaua738vvP9d-hbSVZB05kQn_kB4VMaQ9EEElyERGcw4GNd7qc6RECUFHbAO2f31nZ7qUXrUmp94FMNrIqgT1dLQMJLTMkL0z8Uc2z5mSv3W6saCytnarEIieSxU6J8Q8NkOmWjYxAcgTWtKCVL9owlOqDPeVzwyqPzRFQwz2fCSQ4i7TbMEFw8d__JQptGMyzcmfNHLDMR6iatTAGwKyuxO1ISlo_E82V9OkPdQw8wh5MMAEw',
-          }} // Replace with actual Map screenshot or real Google Maps
-          style={styles.mapImage}
-          imageStyle={{ borderRadius: 20 }}
+        <MapView
+          provider={provider}
+          style={styles.map}
+          initialRegion={{
+            latitude: 21.0285,
+            longitude: 105.8542,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
         >
-          {/* Details Button - bottom right */}
-          <TouchableOpacity style={styles.detailsButton}>
-            <Entypo
-              name="map"
-              size={18}
-              color={COLORS.primary}
-              style={styles.buttonIcon}
+          {incidents.map((incident) => (
+            <Marker
+              key={incident.id}
+              coordinate={{
+                latitude: incident.latitude,
+                longitude: incident.longitude,
+              }}
+              title={incident.title}
+              pinColor={COLORS.primary}
             />
-            <Text style={styles.detailsText}>Xem chi tiết</Text>
-          </TouchableOpacity>
-        </ImageBackground>
+          ))}
+        </MapView>
+
+        {/* Details Button - bottom right */}
+        <TouchableOpacity style={styles.detailsButton}>
+          <Entypo
+            name="map"
+            size={18}
+            color={COLORS.primary}
+            style={styles.buttonIcon}
+          />
+          <Text style={styles.detailsText}>Xem chi tiết</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -76,17 +122,18 @@ const styles = StyleSheet.create({
     height: 180,
     width: '100%',
     borderRadius: BORDER_RADIUS['2xl'],
+    overflow: 'hidden',
     ...SHADOWS.md,
   },
-  mapImage: {
+  map: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 12,
   },
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
     backgroundColor: COLORS.white,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,

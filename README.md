@@ -2,6 +2,34 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Setup
+
+### Environment Variables
+
+Before running the app, you need to set up your environment variables:
+
+1. Copy the `.env.example` file to `.env`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Add your Google Maps API Key to `.env`:
+
+   ```
+   GOOGLE_MAPS_API_KEY=your_api_key_here
+   ```
+
+   To get a Google Maps API Key:
+
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project
+   - Enable "Maps SDK for Android"
+   - Create an API Key in the Credentials section
+   - Add the key to your `.env` file
+
+> **Important**: Never commit the `.env` file to version control. It's already added to `.gitignore`.
+
 ## Get started
 
 To start the app, in your terminal run:
@@ -38,7 +66,6 @@ Run `npm run deploy` to [deploy to production](https://docs.expo.dev/eas/workflo
 ## Hosting
 
 Expo offers hosting for websites and API functions via EAS Hosting. See the [Getting Started](https://docs.expo.dev/eas/hosting/get-started/) guide to learn more.
-
 
 ## Get a fresh project
 
