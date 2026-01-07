@@ -10,60 +10,79 @@ import {
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-// Import ViroReact (without custom material system)
+// Import ViroReact
 import {
   ViroARScene,
-  ViroARSceneNavigator,
+  ViroARSceneNavigator, // Optional, falls benötigt
+  ViroNode,
   ViroPolyline,
   ViroSphere,
   ViroText,
   ViroTrackingStateConstants,
 } from '@reactvision/react-viro';
 
-// --- AR SCENE COMPONENT (extracted for clarity) ---
-// Simple measurement scene like Apple Measure app
+// --- AR SCENE COMPONENT ---
 const MeasurementScene = (props: any) => {
-  const { points, distance, onInitialized, onCameraTransformUpdate } =
-    props.sceneNavigator.viroAppProps;
-
-  console.log('Scene rendering with points:', points.length);
+  const {
+    points,
+    distance,
+    onInitialized,
+    onCameraTransformUpdate,
+    mode,
+    modelPosition,
+  } = props.sceneNavigator.viroAppProps;
 
   return (
     <ViroARScene
       onTrackingUpdated={onInitialized}
       onCameraTransformUpdate={onCameraTransformUpdate}
     >
-      {/* Render measurement points as visible spheres */}
-      {points.map((point: any) => (
+      {/* Measurement mode */}
+      {mode === 'measure' && (
+        <ViroNode>
+          {points.map((point: any) => (
+            <ViroSphere
+              key={point.id}
+              position={point.position}
+              radius={0.015} // Etwas kleiner für Eleganz
+              widthSegmentCount={20}
+              heightSegmentCount={20}
+            />
+          ))}
+
+          {/* Render line between two points */}
+          {points.length === 2 && (
+            <>
+              <ViroPolyline
+                points={[points[0].position, points[1].position]}
+                thickness={0.005}
+              />
+              {/* Distance label in 3D space */}
+              <ViroText
+                text={formatDistanceHelper(distance)}
+                position={[
+                  (points[0].position[0] + points[1].position[0]) / 2,
+                  (points[0].position[1] + points[1].position[1]) /
+                    2 +
+                    0.05,
+                  (points[0].position[2] + points[1].position[2]) / 2,
+                ]}
+                scale={[0.1, 0.1, 0.1]}
+                style={styles.textStyle}
+              />
+            </>
+          )}
+        </ViroNode>
+      )}
+
+      {/* Model mode - simple sphere placeholder */}
+      {mode === 'model' && modelPosition && (
         <ViroSphere
-          key={point.id}
-          position={point.position}
-          radius={0.05}
+          position={modelPosition}
+          radius={0.1}
           widthSegmentCount={20}
           heightSegmentCount={20}
         />
-      ))}
-
-      {/* Render line between two points */}
-      {points.length === 2 && (
-        <>
-          <ViroPolyline
-            points={[points[0].position, points[1].position]}
-            thickness={0.02}
-          />
-          {/* Distance label in 3D space */}
-          <ViroText
-            text={formatDistanceHelper(distance)}
-            position={[
-              (points[0].position[0] + points[1].position[0]) / 2,
-              (points[0].position[1] + points[1].position[1]) / 2 +
-                0.15,
-              (points[0].position[2] + points[1].position[2]) / 2,
-            ]}
-            scale={[0.2, 0.2, 0.2]}
-            style={styles.textStyle}
-          />
-        </>
       )}
     </ViroARScene>
   );
@@ -89,19 +108,21 @@ export default function ARCameraView({
   const [points, setPoints] = useState<any[]>([]);
   const [distance, setDistance] = useState<number>(0);
   const [isTracking, setIsTracking] = useState(false);
+  const [mode, setMode] = useState<'measure' | 'model'>('measure');
 
+  // --- HIER WAR DER SYNTAX FEHLER KORRIGIERT ---
   const onInitialized = (state: any, reason: any) => {
-    console.log('AR Tracking State:', state, 'Reason:', reason);
     if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
-      console.log('✅ AR Tracking Normal - Ready to measure');
+      console.log('✅ AR Tracking Normal');
       setIsTracking(true);
-    } else {
-      console.log(
-        '⚠️ AR Tracking NOT normal - Move device to scan surfaces'
-      );
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
+    ) {
+      console.log('⚠️ AR Tracking Unavailable');
       setIsTracking(false);
     }
   };
+  // ---------------------------------------------
 
   // Track camera position and forward direction
   const onCameraTransformUpdate = (cameraTransform: any) => {
@@ -115,22 +136,19 @@ export default function ARCameraView({
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
   };
 
-  // Place point at center - calculate position from camera
+  // Place point at center
   const addPointAtCenter = () => {
     if (!cameraPositionRef.current) {
-      console.log('❌ Camera position not available yet');
       Alert.alert('Not Ready', 'Wait for AR tracking to initialize');
       return;
     }
 
     try {
-      console.log('🎯 Placing point from camera center...');
-
       const camTransform = cameraPositionRef.current;
       const camPos = camTransform.position;
       const camForward = camTransform.forward;
 
-      // Place point 0.5 meters in front of camera in the direction it's facing
+      // Place point 0.5 meters in front of camera
       const dist = 0.5;
       const hitPosition = [
         camPos[0] + camForward[0] * dist,
@@ -138,11 +156,9 @@ export default function ARCameraView({
         camPos[2] + camForward[2] * dist,
       ];
 
-      console.log('✅ Placing point at:', hitPosition);
-
       setPoints((curr) => {
         if (curr.length >= 2) {
-          console.log('Resetting - starting new measurement');
+          // Reset if we already have 2 points and click again
           return [{ position: hitPosition, id: Math.random() }];
         }
 
@@ -150,14 +166,12 @@ export default function ARCameraView({
           ...curr,
           { position: hitPosition, id: Math.random() },
         ];
-        console.log('📍 Points count:', newPts.length);
 
         if (newPts.length === 2) {
           const calculatedDist = calculateDistance(
             newPts[0].position,
             newPts[1].position
           );
-          console.log('📏 Distance:', calculatedDist, 'meters');
           setDistance(calculatedDist);
         }
 
@@ -165,12 +179,10 @@ export default function ARCameraView({
       });
     } catch (error) {
       console.log('❌ Error placing point:', error);
-      Alert.alert('Error', 'Could not place point');
     }
   };
 
   const resetMeasurement = () => {
-    console.log('🔄 Resetting measurement');
     setPoints([]);
     setDistance(0);
   };
@@ -200,21 +212,57 @@ export default function ARCameraView({
           distance,
           onInitialized,
           onCameraTransformUpdate,
+          mode,
+          modelPosition: cameraPositionRef.current
+            ? [
+                cameraPositionRef.current.position[0],
+                cameraPositionRef.current.position[1] - 0.3,
+                cameraPositionRef.current.position[2] - 0.5,
+              ]
+            : null,
         }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Overlay UI - Simple like Apple Measure */}
+      {/* Overlay UI */}
       <View style={styles.overlay} pointerEvents="box-none">
-        {/* Center crosshair - like Apple Measure */}
-        <View style={styles.centerCrosshair} pointerEvents="none">
-          <View style={styles.crosshairDot} />
-          <View style={styles.crosshairRingOuter}>
-            <View style={styles.crosshairRingInner} />
-          </View>
+        {/* Mode toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              mode === 'measure' && styles.modeButtonActive,
+            ]}
+            onPress={() => {
+              setMode('measure');
+              setPoints([]);
+              setDistance(0);
+            }}
+          >
+            <Text style={styles.modeButtonText}>Messen</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              mode === 'model' && styles.modeButtonActive,
+            ]}
+            onPress={() => setMode('model')}
+          >
+            <Text style={styles.modeButtonText}>Modell</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Top bar with close and reset */}
+        {/* Center crosshair */}
+        {mode === 'measure' && (
+          <View style={styles.centerCrosshair} pointerEvents="none">
+            <View style={styles.crosshairDot} />
+            <View style={styles.crosshairRingOuter}>
+              <View style={styles.crosshairRingInner} />
+            </View>
+          </View>
+        )}
+
+        {/* Top bar */}
         <View style={styles.topBar} pointerEvents="box-none">
           <TouchableOpacity
             style={styles.closeButton}
@@ -223,8 +271,7 @@ export default function ARCameraView({
             <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
 
-          {/* Show distance when both points are set */}
-          {points.length === 2 && (
+          {mode === 'measure' && points.length === 2 && (
             <View style={styles.distanceDisplay}>
               <Text style={styles.measurementText}>
                 {formatDistanceHelper(distance)}
@@ -241,53 +288,54 @@ export default function ARCameraView({
         </View>
 
         {/* Bottom instruction panel */}
-        <View style={styles.bottomBar}>
-          {!isTracking ? (
-            <View style={styles.instructionPanel}>
-              <Text style={styles.instructionText}>
-                Move device to scan surfaces
-              </Text>
-            </View>
-          ) : (
-            <>
+        {mode === 'measure' && (
+          <View style={styles.bottomBar}>
+            {!isTracking ? (
               <View style={styles.instructionPanel}>
-                {points.length === 0 && (
-                  <Text style={styles.instructionText}>
-                    Point at surface, then tap + button
-                  </Text>
-                )}
-                {points.length === 1 && (
-                  <Text style={styles.instructionText}>
-                    Move to end point and tap +
-                  </Text>
-                )}
-                {points.length === 2 && (
+                <Text style={styles.instructionText}>
+                  Di chuyển thiết bị để quét các khu vực cần thiết.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.instructionPanel}>
+                  {points.length === 0 && (
+                    <Text style={styles.instructionText}>
+                      Nhắm vào điểm bắt đầu, sau đó nhấn +
+                    </Text>
+                  )}
+                  {points.length === 1 && (
+                    <Text style={styles.instructionText}>
+                      Nhắm vào điểm kết thúc, sau đó nhấn +
+                    </Text>
+                  )}
+                  {points.length === 2 && (
+                    <TouchableOpacity
+                      style={styles.saveButton}
+                      onPress={takeScreenshot}
+                    >
+                      <Ionicons
+                        name="download-outline"
+                        size={20}
+                        color="white"
+                      />
+                      <Text style={styles.saveButtonText}>Lưu</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {points.length < 2 && (
                   <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={takeScreenshot}
+                    style={styles.addPointButton}
+                    onPress={addPointAtCenter}
                   >
-                    <Ionicons
-                      name="download-outline"
-                      size={20}
-                      color="white"
-                    />
-                    <Text style={styles.saveButtonText}>Save</Text>
+                    <Ionicons name="add" size={32} color="#333" />
                   </TouchableOpacity>
                 )}
-              </View>
-
-              {/* Big add point button - like Apple Measure */}
-              {points.length < 2 && (
-                <TouchableOpacity
-                  style={styles.addPointButton}
-                  onPress={addPointAtCenter}
-                >
-                  <Ionicons name="add" size={32} color="white" />
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        </View>
+              </>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -306,6 +354,30 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
+  // Mode Toggle Styles (Waren im Original nicht definiert!)
+  modeToggle: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingTop: 50, // Safe Area Top
+    gap: 10,
+    zIndex: 10,
+  },
+  modeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modeButtonActive: {
+    backgroundColor: 'white',
+  },
+  modeButtonText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  // Crosshair
   centerCrosshair: {
     position: 'absolute',
     top: '50%',
@@ -340,12 +412,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.5)',
   },
+
+  // Top Bar
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    // Top padding wird vom ModeToggle übernommen, daher hier etwas weniger oder absolut positioniert
+    position: 'absolute',
+    top: 50,
+    width: '100%',
     alignItems: 'center',
+    zIndex: 5,
   },
   closeButton: {
     width: 40,
@@ -364,35 +442,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   distanceDisplay: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   measurementText: {
     color: 'white',
-    fontSize: 48,
-    fontWeight: '300',
+    fontSize: 24,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
+
+  // Bottom Bar
   bottomBar: {
     paddingBottom: 60,
     paddingHorizontal: 20,
     alignItems: 'center',
+    width: '100%',
   },
   instructionPanel: {
     backgroundColor: 'rgba(0,0,0,0.7)',
     borderRadius: 25,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    minWidth: 250,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
     alignItems: 'center',
   },
   instructionText: {
     color: 'white',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -413,7 +492,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

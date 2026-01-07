@@ -26,7 +26,6 @@ import MapView, { Marker } from 'react-native-maps';
 //feature threejs
 import ARCameraView from '@/components/core/ARCameraView';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 interface LocationResult {
   address: string;
   latitude: number;
@@ -553,7 +552,7 @@ export default function CreateReportModal() {
   );
 }
 
-const styles = StyleSheet.create({
+let styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.gray50 },
   content: { padding: SPACING.lg },
   sectionTitle: {
