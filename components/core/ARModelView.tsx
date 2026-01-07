@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -7,14 +8,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 
 // Import ViroReact
 import {
+  ViroAmbientLight,
   ViroARPlaneSelector,
   ViroARScene,
   ViroARSceneNavigator,
   ViroBox,
-  ViroText,
+  ViroNode,
+  ViroSpotLight,
   ViroTrackingStateConstants,
 } from '@reactvision/react-viro';
 
@@ -30,50 +34,58 @@ const ModelScene = (props: any) => {
   return (
     <ViroARScene
       onTrackingUpdated={onInitialized}
-      displayPointCloud={false}
       onAnchorFound={onARPlaneDetected}
     >
-      {/* Show detected planes for debugging */}
+      {/* Lighting is essential for 3D models to look 3D */}
+      <ViroAmbientLight color="#ffffff" intensity={200} />
+      <ViroSpotLight
+        innerAngle={5}
+        outerAngle={90}
+        direction={[0, -1, -0.2]}
+        position={[0, 3, 1]}
+        color="#ffffff"
+        castsShadow={true}
+      />
+
+      {/* Debug: Show detected planes if enabled */}
       {showPlanes && (
         <ViroARPlaneSelector>
           <ViroBox
             position={[0, 0, 0]}
-            scale={[1, 0.01, 1]}
-            materials={[
-              {
-                diffuseColor: '#00ff0050',
-                lightingModel: 'Constant',
-              },
-            ]}
+            scale={[0.5, 0.01, 0.5]}
+            materials={[{ diffuseColor: 'rgba(0,255,0,0.3)' }]}
           />
         </ViroARPlaneSelector>
       )}
 
       {/* Render all placed models */}
       {placedModels.map((model: any) => (
-        <React.Fragment key={model.id}>
+        <ViroNode
+          key={model.id}
+          position={model.position}
+          rotation={model.rotation}
+          scale={[0.1, 0.1, 0.1]} // Adjust scale based on your GLTF model size
+          dragType="FixedToWorld"
+          onDrag={() => {}} // Allows dragging the object after placement
+        >
+          {/* TODO: SWITCH TO GLTF MODEL HERE 
+            Uncomment the Viro3DObject below and remove ViroBox to use your file.
+          */}
+
+          {/* <Viro3DObject
+            source={require('@/assets/models/car.glb')} // Path to your GLB file
+            type="GLB" 
+            scale={[1, 1, 1]}
+          /> 
+          */}
+
+          {/* Placeholder Box */}
           <ViroBox
-            position={model.position}
-            scale={[0.1, 0.1, 0.1]}
-            materials={[
-              {
-                diffuseColor: '#ff6b6b',
-                lightingModel: 'Lambert',
-              },
-            ]}
-            rotation={model.rotation || [0, 0, 0]}
+            position={[0, 0.05, 0]}
+            scale={[1, 1, 1]}
+            materials={[{ diffuseColor: '#ff6b6b' }]}
           />
-          <ViroText
-            text={`Model ${model.id}`}
-            position={[
-              model.position[0],
-              model.position[1] + 0.15,
-              model.position[2],
-            ]}
-            scale={[0.05, 0.05, 0.05]}
-            style={styles.textStyle}
-          />
-        </React.Fragment>
+        </ViroNode>
       ))}
     </ViroARScene>
   );
@@ -89,160 +101,98 @@ export default function ARModelView({
   const arSceneRef = useRef<any>(null);
   const cameraPositionRef = useRef<any>(null);
 
+  // State
   const [isTracking, setIsTracking] = useState(false);
   const [placedModels, setPlacedModels] = useState<any[]>([]);
-  const [showPlanes, setShowPlanes] = useState(true);
-  const [planesDetected, setPlanesDetected] = useState(false);
-  const detectedPlanesRef = useRef<any[]>([]);
+  const [showPlanes, setShowPlanes] = useState(false); // Toggle debug planes
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      console.log('🧹 Cleaning up AR Model View');
       setPlacedModels([]);
-      setIsTracking(false);
-      setPlanesDetected(false);
-      detectedPlanesRef.current = [];
     };
   }, []);
 
+  // Handle AR Initialization
   const onInitialized = (state: any, reason: any) => {
-    console.log('AR Tracking State:', state);
     if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
-      console.log('✅ AR Ready');
+      console.log('✅ AR Tracking Normal');
       setIsTracking(true);
-    } else {
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
+    ) {
       setIsTracking(false);
     }
   };
 
-  // Track camera for model placement
+  // Keep track of camera position for fallback placement
   const onCameraTransformUpdate = (cameraTransform: any) => {
     cameraPositionRef.current = cameraTransform;
   };
 
-  // Track detected AR planes
-  const onARPlaneDetected = (anchor: any) => {
-    console.log('🎯 AR Plane detected:', anchor);
-    detectedPlanesRef.current.push(anchor);
-    if (!planesDetected) {
-      setPlanesDetected(true);
-      console.log('✅ First plane detected - ready to place objects');
-    }
-  };
+  // Logic to place a new model - SIMPLIFIED
+  const handleAddObject = () => {
+    console.log('🎯 handleAddObject called');
+    console.log('Is tracking:', isTracking);
+    console.log('Current models:', placedModels.length);
 
-  // Place model using AR Hit Test on real surfaces
-  const placeModelWithHitTest = () => {
-    if (!cameraPositionRef.current) {
-      Alert.alert('Chưa sẵn sàng', 'Chờ tính năng theo dõi AR');
+    if (!isTracking) {
+      Alert.alert('Chờ một chút', 'AR đang khởi động...');
       return;
     }
 
-    console.log('🎯 Attempting to place model...');
-    console.log(
-      'Camera position:',
-      cameraPositionRef.current.position
+    // Simple placement: just place in front of camera at origin
+    // Each model gets a slightly different position so they don't overlap
+    const offset = placedModels.length * 0.2; // Spread them out
+    const position = [
+      offset, // X: spread horizontally
+      -0.5, // Y: half meter below eye level (on ground)
+      -1.0, // Z: 1 meter forward
+    ];
+
+    console.log('📦 Placing at position:', position);
+    placeModel(position);
+  };
+
+  const placeModel = (position: number[]) => {
+    const newModel = {
+      id: Date.now(), // Unique ID
+      position: position,
+      rotation: [0, Math.random() * 360, 0], // Random rotation for variety
+    };
+    console.log('📍 Adding new model:', newModel);
+    setPlacedModels((prev) => {
+      const updated = [...prev, newModel];
+      console.log('Total models now:', updated.length);
+      return updated;
+    });
+    Alert.alert(
+      '✅ Thành công',
+      `Đã đặt mô hình #${placedModels.length + 1}`
     );
-    console.log('AR Scene ref exists:', !!arSceneRef.current);
+  };
 
-    // Try performARHitTestWithRay first
-    if (
-      arSceneRef.current?.arSceneNavigator?.performARHitTestWithRay
-    ) {
-      const screenCenter = [0.5, 0.5];
-      console.log('Trying performARHitTestWithRay...');
+  // Remove the last added object
+  const handleUndo = () => {
+    setPlacedModels((prev) => prev.slice(0, -1));
+  };
 
-      arSceneRef.current.arSceneNavigator
-        .performARHitTestWithRay(screenCenter)
-        .then((results: any[]) => {
-          console.log('Hit test results:', results);
-          if (results && results.length > 0) {
-            placeModelAtHit(results[0]);
-          } else {
-            console.log('No hit results, using fallback');
-            placeModelFallback();
-          }
-        })
-        .catch((error: any) => {
-          console.error('Hit test error:', error);
-          placeModelFallback();
-        });
-    } else {
-      console.log(
-        'performARHitTestWithRay not available, using fallback'
-      );
-      placeModelFallback();
+  // Screenshot logic
+  const takeScreenshot = async () => {
+    if (!viewRef.current) return;
+    try {
+      const uri = await captureRef(viewRef.current, {
+        format: 'png',
+        quality: 1,
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert('Thành công', 'Ảnh đã được lưu vào thư viện');
+      }
+    } catch (e) {
+      console.log('Screenshot error', e);
     }
-  };
-
-  // Place model at hit test result
-  const placeModelAtHit = (hit: any) => {
-    const hitPosition = [
-      hit.transform?.position?.[0] || hit.position?.[0] || 0,
-      hit.transform?.position?.[1] || hit.position?.[1] || 0,
-      hit.transform?.position?.[2] || hit.position?.[2] || 0,
-    ];
-
-    console.log('✅ Placing model at hit position:', hitPosition);
-
-    const newModel = {
-      id: Date.now(),
-      position: hitPosition,
-      rotation: [0, Math.random() * 360, 0],
-    };
-
-    setPlacedModels((prev) => [...prev, newModel]);
-    Alert.alert(
-      'Mô hình được đặt!',
-      `Vị trí: [${hitPosition.map((v) => v.toFixed(2)).join(', ')}]`
-    );
-  };
-
-  // Fallback: Place model in front of camera
-  const placeModelFallback = () => {
-    if (!cameraPositionRef.current) return;
-
-    const camPos = cameraPositionRef.current.position;
-    const camForward = cameraPositionRef.current.forward || [
-      0, 0, -1,
-    ];
-
-    // Place 1 meter in front and slightly down
-    const distance = 1.0;
-    const hitPosition = [
-      camPos[0] + camForward[0] * distance,
-      camPos[1] + camForward[1] * distance - 0.3,
-      camPos[2] + camForward[2] * distance,
-    ];
-
-    console.log('📦 Using fallback placement:', hitPosition);
-
-    const newModel = {
-      id: Date.now(),
-      position: hitPosition,
-      rotation: [0, Math.random() * 360, 0],
-    };
-
-    setPlacedModels((prev) => [...prev, newModel]);
-    Alert.alert(
-      'Mô hình được đặt!',
-      `Vị trí: [${hitPosition
-        .map((v) => v.toFixed(2))
-        .join(', ')}]\n(Vị trí ước tính)`
-    );
-  };
-
-  const clearModels = () => {
-    setPlacedModels([]);
-  };
-
-  const handleClose = () => {
-    console.log('🚪 Closing AR Model View - resetting state');
-    setPlacedModels([]);
-    setIsTracking(false);
-    setPlanesDetected(false);
-    detectedPlanesRef.current = [];
-    onClose();
   };
 
   return (
@@ -255,28 +205,30 @@ export default function ARModelView({
           onInitialized,
           placedModels,
           showPlanes,
-          onARPlaneDetected,
+          onARPlaneDetected: () => {}, // Optional: Add logic if you want to detect planes specifically
         }}
         onCameraTransformUpdate={onCameraTransformUpdate}
         style={StyleSheet.absoluteFill}
-        collapsable={false}
       />
 
-      {/* Enhanced UI with Hit Test */}
+      {/* UI Overlay */}
       <View style={styles.overlay} pointerEvents="box-none">
-        <View style={styles.topBar} pointerEvents="auto">
+        {/* Top Bar */}
+        <View style={styles.topBar}>
           <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
+            onPress={onClose}
+            style={styles.iconButton}
           >
             <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
-          <Text style={styles.title}>
-            3D Mô hình ({placedModels.length})
+
+          <Text style={styles.headerTitle}>
+            Mô hình 3D ({placedModels.length})
           </Text>
+
           <TouchableOpacity
-            style={styles.closeButton}
             onPress={() => setShowPlanes(!showPlanes)}
+            style={styles.iconButton}
           >
             <Ionicons
               name={showPlanes ? 'eye' : 'eye-off'}
@@ -286,205 +238,189 @@ export default function ARModelView({
           </TouchableOpacity>
         </View>
 
-        {/* Crosshair for aiming */}
-        <View style={styles.centerCrosshair} pointerEvents="none">
+        {/* Center Crosshair (Target) */}
+        <View style={styles.crosshairContainer} pointerEvents="none">
           <View style={styles.crosshairDot} />
           <View style={styles.crosshairRing} />
         </View>
 
-        {!isTracking ? (
-          <View style={styles.centerText}>
-            <Text style={styles.instruction}>
-              🔍 Môi trường đang được quét...
+        {/* Status Message */}
+        {!isTracking && (
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageText}>
+              Đang quét môi trường...
             </Text>
-            <Text style={styles.subInstruction}>
+            <Text style={styles.subMessageText}>
               Di chuyển thiết bị chậm rãi
-            </Text>
-          </View>
-        ) : !planesDetected ? (
-          <View style={styles.centerText}>
-            <Text style={styles.instruction}>
-              🔎 Đang tìm kiếm bề mặt...
-            </Text>
-            <Text style={styles.subInstruction}>
-              Hướng camera vào sàn hoặc đường
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.centerText}>
-            <Text style={styles.instruction}>
-              ✅ Sẵn sàng đặt mô hình
-            </Text>
-            <Text style={styles.subInstruction}>
-              Nhắm và nhấn + để đặt
             </Text>
           </View>
         )}
 
-        <View style={styles.bottomBar} pointerEvents="auto">
-          <View style={styles.buttonRow}>
-            {placedModels.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={() => {
-                  console.log('🗑️ Clearing all models');
-                  clearModels();
-                }}
-              >
-                <Ionicons name="trash" size={24} color="white" />
-                <Text style={styles.buttonLabel}>Xóa</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[
-                styles.placeButton,
-                !isTracking && styles.placeButtonDisabled,
-              ]}
-              onPress={() => {
-                console.log('➕ Place button pressed');
-                console.log('Current state:', {
-                  isTracking,
-                  planesDetected,
-                  placedModelsCount: placedModels.length,
-                });
-                placeModelWithHitTest();
-              }}
-              disabled={!isTracking}
-            >
-              <Ionicons
-                name="add"
-                size={40}
-                color={isTracking ? 'white' : 'gray'}
-              />
-            </TouchableOpacity>
-          </View>
+        {/* Bottom Controls */}
+        <View style={styles.bottomControls}>
+          {/* Undo/Clear Button */}
+          <TouchableOpacity
+            style={[
+              styles.sideButton,
+              { opacity: placedModels.length > 0 ? 1 : 0.5 },
+            ]}
+            onPress={handleUndo}
+            disabled={placedModels.length === 0}
+          >
+            <Ionicons name="arrow-undo" size={24} color="white" />
+            <Text style={styles.buttonLabel}>Hoàn tác</Text>
+          </TouchableOpacity>
+
+          {/* ADD Button (Big Plus) */}
+          <TouchableOpacity
+            style={[
+              styles.addButton,
+              !isTracking && styles.disabledButton,
+            ]}
+            onPress={handleAddObject}
+            disabled={!isTracking}
+          >
+            <Ionicons name="add" size={40} color="white" />
+          </TouchableOpacity>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[
+              styles.sideButton,
+              { opacity: placedModels.length > 0 ? 1 : 0.5 },
+            ]}
+            onPress={takeScreenshot}
+            disabled={placedModels.length === 0}
+          >
+            <Ionicons
+              name="download-outline"
+              size={24}
+              color="white"
+            />
+            <Text style={styles.buttonLabel}>Lưu ảnh</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 }
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   fullScreen: { flex: 1, backgroundColor: 'black' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
+
+  // Top Header
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 60, // Safe area
     paddingHorizontal: 20,
-    paddingTop: 60,
-    zIndex: 100,
   },
-  closeButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  headerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  centerCrosshair: {
+
+  // Crosshair
+  crosshairContainer: {
     position: 'absolute',
     top: '50%',
     left: '50%',
+    marginLeft: -25, // Half of width
+    marginTop: -25, // Half of height
     width: 50,
     height: 50,
-    marginLeft: -25,
-    marginTop: -25,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   crosshairDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: 'white',
-    position: 'absolute',
   },
   crosshairRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
     borderColor: 'white',
     opacity: 0.8,
   },
-  centerText: {
-    justifyContent: 'center',
+
+  // Status Messages
+  messageContainer: {
+    position: 'absolute',
+    top: 120,
+    width: '100%',
     alignItems: 'center',
-    gap: 8,
   },
-  instruction: {
+  messageText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
   },
-  subInstruction: {
-    color: 'white',
+  subMessageText: {
+    color: '#ddd',
     fontSize: 14,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 15,
+    marginTop: 4,
+    textShadowColor: 'black',
+    textShadowRadius: 2,
   },
-  bottomBar: {
-    alignItems: 'center',
-    paddingBottom: 60,
-    zIndex: 100,
-  },
-  buttonRow: {
+
+  // Bottom Buttons
+  bottomControls: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    gap: 20,
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: 'linear-gradient(...)', // Optional styling
   },
-  placeButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
+  addButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#34C759', // iOS Green
     justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 10,
   },
-  placeButtonDisabled: {
-    backgroundColor: 'rgba(150,150,150,0.5)',
+  disabledButton: {
+    backgroundColor: '#555',
   },
-  clearButton: {
-    flexDirection: 'column',
+  sideButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,59,48,0.8)',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 25,
-    gap: 4,
-    minWidth: 70,
+    width: 70,
   },
   buttonLabel: {
     color: 'white',
     fontSize: 12,
-    fontWeight: '600',
-  },
-  textStyle: {
-    fontFamily: 'System',
-    fontSize: 24,
-    color: '#ffffff',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    marginTop: 4,
+    fontWeight: '500',
   },
 });

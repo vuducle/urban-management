@@ -20,6 +20,7 @@ import {
   ViroText,
   ViroTrackingStateConstants,
 } from '@reactvision/react-viro';
+import ARModelView from './ARModelView';
 
 // --- AR SCENE COMPONENT ---
 const MeasurementScene = (props: any) => {
@@ -73,16 +74,6 @@ const MeasurementScene = (props: any) => {
             </>
           )}
         </ViroNode>
-      )}
-
-      {/* Model mode - simple sphere placeholder */}
-      {mode === 'model' && modelPosition && (
-        <ViroSphere
-          position={modelPosition}
-          radius={0.1}
-          widthSegmentCount={20}
-          heightSegmentCount={20}
-        />
       )}
     </ViroARScene>
   );
@@ -201,6 +192,11 @@ export default function ARCameraView({
     }
   };
 
+  // Handle model mode - show ARModelView as full screen instead of dummy
+  if (mode === 'model') {
+    return <ARModelView onClose={() => setMode('measure')} />;
+  }
+
   return (
     <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
       <ViroARSceneNavigator
@@ -213,13 +209,6 @@ export default function ARCameraView({
           onInitialized,
           onCameraTransformUpdate,
           mode,
-          modelPosition: cameraPositionRef.current
-            ? [
-                cameraPositionRef.current.position[0],
-                cameraPositionRef.current.position[1] - 0.3,
-                cameraPositionRef.current.position[2] - 0.5,
-              ]
-            : null,
         }}
         style={StyleSheet.absoluteFill}
         collapsable={false}
