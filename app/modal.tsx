@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, {
+  Marker,
+  PROVIDER_DEFAULT,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 
 //feature threejs
 import ARCameraView from '@/components/core/ARCameraView';
@@ -385,7 +390,11 @@ export default function CreateReportModal() {
         <View style={styles.mapPlaceholder}>
           <MapView
             ref={mapRef}
-            provider={PROVIDER_GOOGLE}
+            provider={
+              Platform.OS === 'android'
+                ? PROVIDER_GOOGLE
+                : PROVIDER_DEFAULT
+            }
             style={styles.mapImage}
             region={region}
             onRegionChangeComplete={(newRegion) => {

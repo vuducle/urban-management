@@ -1,0 +1,122 @@
+import { ViroTrackingStateConstants } from '@reactvision/react-viro';
+import { useEffect, useRef, useState } from 'react';
+
+interface UseARTrackingProps {
+  onARPlaneDetected: (anchor: any) => void;
+}
+
+export const useARTracking = ({
+  onARPlaneDetected,
+}: UseARTrackingProps) => {
+  const [isTracking, setIsTracking] = useState(false);
+  const [arError, setArError] = useState<string | null>(null);
+  const [planesDetected, setPlanesDetected] = useState(false);
+  const [detectedPlaneAnchors, setDetectedPlaneAnchors] = useState<
+    any[]
+  >([]);
+
+  const trackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initializationStartRef = useRef<number>(Date.now());
+
+  const resetTracking = () => {
+    setIsTracking(false);
+    setArError(null);
+    setPlanesDetected(false);
+    setDetectedPlaneAnchors([]);
+    if (trackingTimeoutRef.current) {
+      clearTimeout(trackingTimeoutRef.current);
+      trackingTimeoutRef.current = null;
+    }
+  };
+
+  const onInitialized = (state: any, reason: any) => {
+    const timestamp = new Date().toISOString();
+    const elapsedTime = (
+      (Date.now() - initializationStartRef.current) /
+      1000
+    ).toFixed(1);
+
+    const stateNames: Record<number, string> = {
+      1: 'TRACKING_UNAVAILABLE',
+      2: 'TRACKING_LIMITED',
+      3: 'TRACKING_NORMAL',
+    };
+    const stateName = stateNames[state] || `UNKNOWN(${state})`;
+
+    console.log(
+      `⏱️  [${elapsedTime}s] AR State: ${stateName} (${state}), Reason: ${reason}`
+    );
+
+    if (trackingTimeoutRef.current) {
+      clearTimeout(trackingTimeoutRef.current);
+      trackingTimeoutRef.current = null;
+    }
+
+    if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
+      console.log('✅ AR Tracking NORMAL achieved');
+      setIsTracking(true);
+      setArError(null);
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
+    ) {
+      console.warn(
+        '⚠️  AR UNAVAILABLE - giving ARCore 5 seconds to initialize...'
+      );
+      setIsTracking(false);
+
+      trackingTimeoutRef.current = setTimeout(() => {
+        console.error(
+          '❌ AR still unavailable after 5s - setting error state'
+        );
+        setArError(
+          'Không thể theo dõi AR. Vui lòng di chuyển thiết bị hoặc kiểm tra ARCore.'
+        );
+      }, 5000);
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_LIMITED
+    ) {
+      console.warn('⚠️  AR Tracking LIMITED - need more features');
+      setIsTracking(true);
+    }
+  };
+
+  const handleARPlaneDetected = (anchor: any) => {
+    console.log('🔍 AR Plane detected:', {
+      position: anchor?.position,
+      center: anchor?.center,
+      extent: anchor?.extent,
+      alignment: anchor?.alignment,
+    });
+
+    if (!planesDetected) {
+      setPlanesDetected(true);
+    }
+
+    if (anchor?.position) {
+      setDetectedPlaneAnchors((prev) => {
+        const updated = [...prev, anchor];
+        return updated.slice(-10);
+      });
+    }
+
+    onARPlaneDetected(anchor);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    isTracking,
+    arError,
+    planesDetected,
+    detectedPlaneAnchors,
+    onInitialized,
+    handleARPlaneDetected,
+    resetTracking,
+  };
+};
