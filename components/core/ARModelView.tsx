@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Sharing from 'expo-sharing';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
 
 import {
   Viro3DObject,
@@ -73,14 +73,23 @@ const ModelScene = (props: any) => {
     showPlanes,
     onARPlaneDetected,
     onCameraTransformUpdate,
-    onSceneRef,
     updateModelTransform,
     setIsLoadingModel,
+    onScreenshotCallback,
   } = props.sceneNavigator.viroAppProps;
+
+  // Store scene reference for screenshot
+  const sceneRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    if (onScreenshotCallback && sceneRef.current) {
+      onScreenshotCallback(sceneRef.current);
+    }
+  }, [onScreenshotCallback]);
 
   return (
     <ViroARScene
-      ref={onSceneRef}
+      ref={sceneRef}
       onTrackingUpdated={onInitialized}
       onAnchorFound={onARPlaneDetected}
       onCameraTransformUpdate={onCameraTransformUpdate}
@@ -185,6 +194,9 @@ export default function ARModelView({
   const viewRef = useRef<View>(null);
   const arSceneRef = useRef<any>(null);
   const cameraPositionRef = useRef<any>(null);
+  const trackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initializationStartRef = useRef<number>(Date.now());
+  const viroSceneRef = useRef<any>(null); // Store actual ViroARScene ref for screenshots
 
   // State
   const [isTracking, setIsTracking] = useState(false);
@@ -197,14 +209,140 @@ export default function ARModelView({
   const [selectedModel, setSelectedModel] =
     useState<ModelType>('cube');
   const [isLoadingModel, setIsLoadingModel] = useState(false);
+  const [arError, setArError] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
-    return () => setPlacedModels([]);
+    console.log(
+      '🚀 ARModelView mounted at:',
+      new Date().toISOString()
+    );
+    console.log('📱 Platform:', Platform.OS);
+
+    if (Platform.OS === 'android') {
+      checkARCoreAvailability();
+    }
+
+    // CLEANUP FUNKTION
+    return () => {
+      console.log(
+        '🧹 Cleanup ARModelView at:',
+        new Date().toISOString()
+      );
+
+      // Clear timeout
+      if (trackingTimeoutRef.current) {
+        clearTimeout(trackingTimeoutRef.current);
+        trackingTimeoutRef.current = null;
+      }
+
+      setPlacedModels([]); // reset models
+    };
   }, []);
 
-  const onInitialized = (state: any) => {
+  const handleClose = () => {
+    // 1. Zuerst das Tracking stoppen
+    setIsTracking(false);
+    // 2. Modelle löschen, um RAM freizugeben
+    setPlacedModels([]);
+    // 3. Kurz warten (optional), dann erst schließen
+    setTimeout(() => {
+      onClose();
+    }, 100);
+  };
+
+  const checkARCoreAvailability = async () => {
+    try {
+      // On Android, we need to ensure ARCore is available
+      console.log('Kiểm tra tính khả dụng của ARCore...');
+    } catch (error) {
+      console.error('ARCore check error:', error);
+      setArError('AR không khả dụng trên thiết bị này.');
+      Alert.alert(
+        'AR không khả dụng',
+        'Ứng dụng này yêu cầu Google ARCore. Bạn có muốn cài đặt nó không?',
+        [
+          { text: 'Cancel', onPress: handleClose, style: 'cancel' },
+          {
+            text: 'Install',
+            onPress: () => {
+              Linking.openURL(
+                'https://play.google.com/store/apps/details?id=com.google.ar.core'
+              );
+              handleClose();
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  const onInitialized = (state: any, reason: any) => {
+    const timestamp = new Date().toISOString();
+    const elapsedTime = (
+      (Date.now() - initializationStartRef.current) /
+      1000
+    ).toFixed(1);
+
+    // Map state codes to names for better logging
+    const stateNames: Record<number, string> = {
+      1: 'TRACKING_UNAVAILABLE',
+      2: 'TRACKING_LIMITED',
+      3: 'TRACKING_NORMAL',
+    };
+    const stateName = stateNames[state] || `UNKNOWN(${state})`;
+
+    console.log(
+      `⏱️  [${elapsedTime}s] AR State: ${stateName} (${state}), Reason: ${reason}`
+    );
+    console.log(
+      `📊 Current tracking: ${isTracking}, error: ${
+        arError ? 'YES' : 'NO'
+      }`
+    );
+
+    // Clear any existing timeout
+    if (trackingTimeoutRef.current) {
+      clearTimeout(trackingTimeoutRef.current);
+      trackingTimeoutRef.current = null;
+    }
+
     if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
-      setIsTracking(true);
+      console.log('✅ AR Tracking NORMAL achieved');
+      if (!isTracking) {
+        setIsTracking(true);
+      }
+      if (arError) {
+        setArError(null);
+      }
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
+    ) {
+      console.warn(
+        `⚠️  AR UNAVAILABLE - giving ARCore 5 seconds to initialize...`
+      );
+
+      if (isTracking) {
+        setIsTracking(false);
+      }
+
+      // CRITICAL FIX: Don't set error immediately - give ARCore time to initialize
+      // Only show error if still unavailable after 5 seconds
+      trackingTimeoutRef.current = setTimeout(() => {
+        console.error(
+          '❌ AR still unavailable after 5s - setting error state'
+        );
+        setArError(
+          'Không thể theo dõi AR. Vui lòng di chuyển thiết bị hoặc kiểm tra ARCore.'
+        );
+      }, 5000);
+    } else if (
+      state === ViroTrackingStateConstants.TRACKING_LIMITED
+    ) {
+      console.warn('⚠️  AR Tracking LIMITED - need more features');
+      if (!isTracking) {
+        setIsTracking(true); // Limited tracking is still usable
+      }
     }
   };
 
@@ -230,8 +368,17 @@ export default function ARModelView({
     }
   };
 
-  const onSceneRef = (scene: any) => {
-    arSceneRef.current = scene;
+  const onSceneRef = (sceneNavigator: any) => {
+    console.log('🎬 AR Scene Navigator ref set:', !!sceneNavigator);
+    arSceneRef.current = sceneNavigator;
+  };
+
+  const onScreenshotCallback = (scene: any) => {
+    console.log(
+      '📷 ViroARScene ref received for screenshots:',
+      !!scene
+    );
+    viroSceneRef.current = scene;
   };
 
   const onCameraTransformUpdate = (cameraTransform: any) => {
@@ -246,103 +393,129 @@ export default function ARModelView({
   };
 
   const handleAddObject = async () => {
-    if (!isTracking) {
-      Alert.alert('Chờ một chút', 'AR đang khởi động...');
-      return;
-    }
-
-    console.log('➕ Adding object:', {
-      selectedModel,
-      planesDetected,
-      planeCount: detectedPlaneAnchors.length,
-      hasCamera: !!cameraPositionRef.current,
-      hasScene: !!arSceneRef.current,
-    });
-
-    if (!planesDetected) {
-      Alert.alert(
-        'Tìm bề mặt',
-        'Di chuyển điện thoại để phát hiện mặt phẳng (bật nút mắt để xem)'
+    try {
+      console.log(
+        '🎯 handleAddObject called at:',
+        new Date().toISOString()
       );
-      return;
-    }
-
-    // Manueller Ray-Plane Schnittpunkt
-    if (
-      cameraPositionRef.current &&
-      detectedPlaneAnchors.length > 0
-    ) {
-      const { position: camPos, forward: camForward } =
-        cameraPositionRef.current;
-
-      console.log('📍 Camera for intersection:', {
-        camPos,
-        camForward,
-        planeCount: detectedPlaneAnchors.length,
+      console.log('📊 Pre-check state:', {
+        isTracking,
+        planesDetected,
+        modelCount: placedModels.length,
       });
 
-      // Find closest plane and calculate intersection
-      let closestIntersection: number[] | null = null;
-      let closestDistance = Infinity;
+      if (!isTracking) {
+        console.log('⚠️  Not tracking - showing alert');
+        Alert.alert('Vui lòng đợi', 'AR đang khởi tạo...');
+        return;
+      }
 
-      for (const plane of detectedPlaneAnchors) {
-        if (!plane.position || !plane.center) continue;
+      console.log('➕ Adding object:', {
+        selectedModel,
+        planesDetected,
+        planeCount: detectedPlaneAnchors.length,
+        hasCamera: !!cameraPositionRef.current,
+        hasScene: !!arSceneRef.current,
+      });
 
-        // Plane parameters: position and normal (for horizontal: [0, 1, 0])
-        const planeY = plane.position[1]; // Y height of the plane
-        const planeNormal = [0, 1, 0]; // Horizontal plane points upwards
-
-        // Ray-Plane Intersection formula:
-        // t = (planeY - camPos.y) / camForward.y
-        const denominator = camForward[1];
-
-        // Check if ray is parallel to the plane
-        if (Math.abs(denominator) < 0.0001) continue;
-
-        const t = (planeY - camPos[1]) / denominator;
-
-        // Only positive t (in front of the camera)
-        if (t < 0) continue;
-
-        // Calculate intersection
-        const intersection = [
-          camPos[0] + camForward[0] * t,
-          planeY, // Exact plane height
-          camPos[2] + camForward[2] * t,
-        ];
-
-        // Distance to the camera
-        const distance = Math.sqrt(
-          Math.pow(intersection[0] - camPos[0], 2) +
-            Math.pow(intersection[1] - camPos[1], 2) +
-            Math.pow(intersection[2] - camPos[2], 2)
+      if (!planesDetected) {
+        Alert.alert(
+          'Tìm kiếm bề mặt',
+          'Di chuyển thiết bị để phát hiện mặt phẳng (bật biểu tượng mắt để xem mặt phẳng)'
         );
+        return;
+      }
 
-        console.log('🔵 Plane intersection:', {
-          planeY,
-          t,
-          intersection,
-          distance,
+      // Manueller Ray-Plane Schnittpunkt
+      if (
+        cameraPositionRef.current &&
+        detectedPlaneAnchors.length > 0
+      ) {
+        const { position: camPos, forward: camForward } =
+          cameraPositionRef.current;
+
+        console.log('📍 Camera for intersection:', {
+          camPos,
+          camForward,
+          planeCount: detectedPlaneAnchors.length,
         });
 
-        // Take next intersection
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIntersection = intersection;
-        }
-      }
+        // Find closest plane and calculate intersection
+        let closestIntersection: number[] | null = null;
+        let closestDistance = Infinity;
 
-      if (closestIntersection) {
-        console.log('✅ Using intersection at:', closestIntersection);
-        console.log('📊 Distance:', closestDistance.toFixed(2), 'm');
-        placeModel(closestIntersection);
+        for (const plane of detectedPlaneAnchors) {
+          if (!plane.position || !plane.center) continue;
+
+          // Plane parameters: position and normal (for horizontal: [0, 1, 0])
+          const planeY = plane.position[1]; // Y height of the plane
+          const planeNormal = [0, 1, 0]; // Horizontal plane points upwards
+
+          // Ray-Plane Intersection formula:
+          // t = (planeY - camPos.y) / camForward.y
+          const denominator = camForward[1];
+
+          // Check if ray is parallel to the plane
+          if (Math.abs(denominator) < 0.0001) continue;
+
+          const t = (planeY - camPos[1]) / denominator;
+
+          // Only positive t (in front of the camera)
+          if (t < 0) continue;
+
+          // Calculate intersection
+          const intersection = [
+            camPos[0] + camForward[0] * t,
+            planeY, // Exact plane height
+            camPos[2] + camForward[2] * t,
+          ];
+
+          // Distance to the camera
+          const distance = Math.sqrt(
+            Math.pow(intersection[0] - camPos[0], 2) +
+              Math.pow(intersection[1] - camPos[1], 2) +
+              Math.pow(intersection[2] - camPos[2], 2)
+          );
+
+          console.log('🔵 Plane intersection:', {
+            planeY,
+            t,
+            intersection,
+            distance,
+          });
+
+          // Take next intersection
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIntersection = intersection;
+          }
+        }
+
+        if (closestIntersection) {
+          console.log(
+            '✅ Using intersection at:',
+            closestIntersection
+          );
+          console.log(
+            '📊 Distance:',
+            closestDistance.toFixed(2),
+            'm'
+          );
+          placeModel(closestIntersection);
+        } else {
+          console.warn('⚠️ No valid intersection, using fallback');
+          placeFallback();
+        }
       } else {
-        console.warn('⚠️ No valid intersection, using fallback');
+        console.warn('⚠️ No camera or planes available');
         placeFallback();
       }
-    } else {
-      console.warn('⚠️ No camera or planes available');
-      placeFallback();
+    } catch (error) {
+      console.error('❌ CRASH in handleAddObject:', error);
+      Alert.alert(
+        'Lỗi',
+        'Không thể thêm đối tượng. Vui lòng thử lại.'
+      );
     }
   };
 
@@ -374,50 +547,90 @@ export default function ARModelView({
   };
 
   const placeModel = (position: number[]) => {
-    // Model-specific rotation
-    let rotation = [0, 0, 0];
-    if (selectedModel === 'leon') {
-      rotation = [0, 0, 0]; // GLB models often have correct orientation
+    try {
+      console.log('🔧 placeModel called with position:', position);
+
+      // Model-specific rotation
+      let rotation = [0, 0, 0];
+      if (selectedModel === 'leon') {
+        rotation = [0, 0, 0]; // GLB models often have correct orientation
+      }
+
+      const newModel: PlacedModel = {
+        id: Date.now(),
+        position,
+        rotation,
+        scale: [1, 1, 1], // Initial scale for the node (object is scaled separately)
+        type: selectedModel,
+      };
+
+      console.log('✅ Model created:', {
+        type: newModel.type,
+        position: newModel.position,
+        rotation: newModel.rotation,
+        id: newModel.id,
+      });
+
+      setPlacedModels((prev) => {
+        const updated = [...prev, newModel];
+        console.log(
+          '📦 Models state updated, count:',
+          updated.length
+        );
+        return updated;
+      });
+    } catch (error) {
+      console.error('❌ CRASH in placeModel:', error);
+      Alert.alert('Lỗi', 'Không thể đặt mô hình. Vui lòng thử lại.');
     }
-
-    const newModel: PlacedModel = {
-      id: Date.now(),
-      position,
-      rotation,
-      scale: [1, 1, 1], // Initial scale for the node (object is scaled separately)
-      type: selectedModel,
-    };
-
-    console.log('✅ Model placed:', {
-      type: newModel.type,
-      position: newModel.position,
-      rotation: newModel.rotation,
-      id: newModel.id,
-    });
-
-    setPlacedModels((prev) => [...prev, newModel]);
   };
 
   const handleUndo = () =>
     setPlacedModels((prev) => prev.slice(0, -1));
 
   const takeScreenshot = async () => {
-    if (!viewRef.current) return;
-    try {
-      const uri = await captureRef(viewRef.current, {
-        format: 'png',
-        quality: 1,
-      });
-      if (await Sharing.isAvailableAsync())
-        await Sharing.shareAsync(uri);
-    } catch (e) {
-      Alert.alert('Lỗi', 'Không thể chụp ảnh');
-    }
+    console.log(
+      '📸 Preparing for AR screenshot with camera background...'
+    );
+
+    // Hide UI for clean screenshot
+    setIsCapturing(true);
+
+    // Wait for UI to completely disappear
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Show instruction dialog (UI is already hidden)
+    Alert.alert(
+      '📸 Chụp ảnh AR',
+      'Để chụp ảnh với cả mô hình 3D VÀ môi trường thực tế:\n\n' +
+        '1️⃣ Bấm Power + Volume Down\n' +
+        '2️⃣ Ảnh sẽ tự động lưu vào Gallery\n\n' +
+        '💡 UI đã được ẩn để ảnh đẹp hơn!',
+      [
+        {
+          text: 'Hủy',
+          onPress: () => {
+            setIsCapturing(false);
+            console.log('❌ Screenshot cancelled');
+          },
+          style: 'cancel',
+        },
+        {
+          text: 'Đã chụp ✓',
+          onPress: () => {
+            setIsCapturing(false);
+            console.log('✅ User confirmed screenshot taken');
+          },
+        },
+      ],
+      { cancelable: false }
+    );
   };
 
   return (
     <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
       <ViroARSceneNavigator
+        ref={onSceneRef}
         autofocus={true}
         initialScene={{ scene: ModelScene }}
         viroAppProps={{
@@ -426,110 +639,122 @@ export default function ARModelView({
           showPlanes,
           onARPlaneDetected,
           onCameraTransformUpdate,
-          onSceneRef,
           updateModelTransform: () => {}, // Platzhalter falls nicht genutzt
           setIsLoadingModel,
+          onScreenshotCallback,
         }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* UI Overlay */}
-      <View style={styles.overlay} pointerEvents="box-none">
-        {isLoadingModel && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#34C759" />
-            <Text style={styles.loadingText}>
-              Đang tải mô hình...
+      {/* UI Overlay - hide during screenshot */}
+      {!isCapturing && (
+        <View style={styles.overlay} pointerEvents="box-none">
+          {arError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={24} color="#FF9500" />
+              <Text style={styles.errorText}>{arError}</Text>
+            </View>
+          )}
+
+          {isLoadingModel && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#34C759" />
+              <Text style={styles.loadingText}>
+                Đang tải mô hình...
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              onPress={handleClose}
+              style={styles.iconButton}
+            >
+              <Ionicons name="close" size={28} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              Mô hình 3D ({placedModels.length})
             </Text>
-          </View>
-        )}
-
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.iconButton}
-          >
-            <Ionicons name="close" size={28} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            Mô hình 3D ({placedModels.length})
-          </Text>
-          <TouchableOpacity
-            onPress={() => setShowPlanes(!showPlanes)}
-            style={styles.iconButton}
-          >
-            <Ionicons
-              name={showPlanes ? 'eye' : 'eye-off'}
-              size={24}
-              color="white"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.crosshairContainer} pointerEvents="none">
-          <View style={styles.crosshairDot} />
-          <View style={styles.crosshairRing} />
-        </View>
-
-        <View style={styles.bottomControls}>
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={handleUndo}
-            disabled={placedModels.length === 0}
-          >
-            <Ionicons
-              name="arrow-undo"
-              size={24}
-              color="white"
-              style={{ opacity: placedModels.length ? 1 : 0.4 }}
-            />
-            <Text style={styles.buttonLabel}>Hoàn tác</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              !isTracking && styles.disabledButton,
-            ]}
-            onPress={handleAddObject}
-          >
-            <Ionicons name="add" size={40} color="white" />
-          </TouchableOpacity>
-
-          <View style={styles.modelSelector}>
-            {(['cube', 'leon', 'tv', 'house'] as ModelType[]).map(
-              (type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.modelBtn,
-                    selectedModel === type && styles.modelBtnActive,
-                  ]}
-                  onPress={() => setSelectedModel(type)}
-                >
-                  <Text style={styles.modelBtnText}>
-                    {type.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              )
-            )}
+            <TouchableOpacity
+              onPress={() => setShowPlanes(!showPlanes)}
+              style={styles.iconButton}
+            >
+              <Ionicons
+                name={showPlanes ? 'eye' : 'eye-off'}
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={takeScreenshot}
-            disabled={placedModels.length === 0}
+          <View
+            style={styles.crosshairContainer}
+            pointerEvents="none"
           >
-            <Ionicons
-              name="camera"
-              size={24}
-              color="white"
-              style={{ opacity: placedModels.length ? 1 : 0.4 }}
-            />
-            <Text style={styles.buttonLabel}>Chụp ảnh</Text>
-          </TouchableOpacity>
+            <View style={styles.crosshairDot} />
+            <View style={styles.crosshairRing} />
+          </View>
+
+          <View style={styles.bottomControls}>
+            <TouchableOpacity
+              style={styles.sideButton}
+              onPress={handleUndo}
+              disabled={placedModels.length === 0}
+            >
+              <Ionicons
+                name="arrow-undo"
+                size={24}
+                color="white"
+                style={{ opacity: placedModels.length ? 1 : 0.4 }}
+              />
+              <Text style={styles.buttonLabel}>Hoàn tác</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                !isTracking && styles.disabledButton,
+              ]}
+              onPress={handleAddObject}
+            >
+              <Ionicons name="add" size={40} color="white" />
+            </TouchableOpacity>
+
+            <View style={styles.modelSelector}>
+              {(['cube', 'leon', 'tv', 'house'] as ModelType[]).map(
+                (type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.modelBtn,
+                      selectedModel === type && styles.modelBtnActive,
+                    ]}
+                    onPress={() => setSelectedModel(type)}
+                  >
+                    <Text style={styles.modelBtnText}>
+                      {type.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.sideButton}
+              onPress={takeScreenshot}
+              disabled={placedModels.length === 0}
+            >
+              <Ionicons
+                name="camera"
+                size={24}
+                color="white"
+                style={{ opacity: placedModels.length ? 1 : 0.4 }}
+              />
+              <Text style={styles.buttonLabel}>Lưu ảnh</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -593,6 +818,25 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   loadingText: { color: 'white', marginTop: 10, fontSize: 12 },
+  errorContainer: {
+    position: 'absolute',
+    top: 120,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 149, 0, 0.95)',
+    padding: 15,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    maxWidth: '80%',
+    zIndex: 1000,
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
   bottomControls: {
     flexDirection: 'row',
     justifyContent: 'space-around',

@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "urban-management",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vuducle.urbanmanagement",
@@ -62,6 +62,14 @@
         {
           "photosPermission": "App cần quyền truy cập thư viện ảnh để tải lên hình ảnh.",
           "cameraPermission": "App cần quyền truy cập camera để chụp ảnh các vấn đề."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "App cần quyền truy cập thư viện ảnh để lưu ảnh AR.",
+          "savePhotosPermission": "App cần quyền lưu ảnh AR vào thư viện.",
+          "isAccessMediaLocationEnabled": true
         }
       ],
       [

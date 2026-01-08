@@ -24,6 +24,9 @@ module.exports = {
           'App cần quyền lưu ảnh vào thư viện.',
         ITSAppUsesNonExemptEncryption: false,
       },
+      config: {
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      },
     },
     android: {
       adaptiveIcon: {

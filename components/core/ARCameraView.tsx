@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,6 +21,7 @@ import {
   ViroText,
   ViroTrackingStateConstants,
 } from '@reactvision/react-viro';
+import ErrorBoundary from '../ErrorBoundary';
 import ARModelView from './ARModelView';
 
 // --- AR SCENE COMPONENT ---
@@ -45,7 +47,7 @@ const MeasurementScene = (props: any) => {
             <ViroSphere
               key={point.id}
               position={point.position}
-              radius={0.015} // Etwas kleiner für Eleganz
+              radius={0.015} // Slightly smaller for elegance
               widthSegmentCount={20}
               heightSegmentCount={20}
             />
@@ -79,7 +81,7 @@ const MeasurementScene = (props: any) => {
   );
 };
 
-// Hilfsfunktion
+// --- HELPER FUNCTION TO FORMAT DISTANCE ---
 const formatDistanceHelper = (meters: number): string => {
   if (meters < 1) return `${(meters * 100).toFixed(0)} cm`;
   return `${meters.toFixed(2)} m`;
@@ -100,17 +102,111 @@ export default function ARCameraView({
   const [distance, setDistance] = useState<number>(0);
   const [isTracking, setIsTracking] = useState(false);
   const [mode, setMode] = useState<'measure' | 'model'>('measure');
+  const [arError, setArError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    // Check for Android ARCore
+    if (Platform.OS === 'android') {
+      console.log('Android AR Camera: Checking ARCore...');
+      console.log('📱 Device Info:', {
+        platform: Platform.OS,
+        version: Platform.Version,
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🧹 ARCameraView unmounting');
+    };
+  }, []);
+
+  // Handle mode transitions with proper AR session cleanup
+  useEffect(() => {
+    console.log('🔄 Mode transition triggered:', mode);
+
+    // Always transition to ensure proper AR session cleanup
+    setIsTransitioning(true);
+
+    const timer = setTimeout(() => {
+      if (mode === 'model') {
+        console.log('✅ Switching to Model Mode complete');
+      } else {
+        console.log('✅ Switching to Measure Mode complete');
+      }
+      setIsTransitioning(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [mode]);
+
+  // Track mode changes
+  useEffect(() => {
+    console.log('🔀 Mode changed to:', mode);
+  }, [mode]);
 
   // --- HIER WAR DER SYNTAX FEHLER KORRIGIERT ---
   const onInitialized = (state: any, reason: any) => {
-    if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
-      console.log('✅ AR Tracking Normal');
-      setIsTracking(true);
-    } else if (
-      state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
-    ) {
-      console.log('⚠️ AR Tracking Unavailable');
-      setIsTracking(false);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] AR Tracking State:`, {
+      state,
+      reason,
+      mode,
+      stateNames:
+        {
+          1: 'TRACKING_UNAVAILABLE',
+          2: 'TRACKING_LIMITED',
+          3: 'TRACKING_NORMAL',
+        }[state] || 'UNKNOWN',
+    });
+
+    try {
+      if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
+        console.log('✅ AR Tracking Normal');
+        if (!isTracking) {
+          setIsTracking(true);
+        }
+        if (arError) {
+          setArError(null);
+        }
+      } else if (
+        state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
+      ) {
+        console.warn('⚠️ AR Tracking Unavailable - Reason:', reason);
+        console.warn('Current Mode:', mode);
+
+        if (isTracking) {
+          setIsTracking(false);
+        }
+
+        // On Android, check if ARCore is the issue - but don't spam
+        if (Platform.OS === 'android' && !arError) {
+          console.warn(
+            '🟡 ARCore might not be installed - this is NORMAL on first start'
+          );
+          console.log(
+            '📌 To fix: Install "Google Play Services for AR" from Play Store'
+          );
+          setArError(
+            'Tính năng AR không khả dụng. Vui lòng di chuyển thiết bị của bạn hoặc cài đặt ARCore..'
+          );
+        }
+      } else if (
+        state === ViroTrackingStateConstants.TRACKING_LIMITED
+      ) {
+        console.log('⚠️ AR Tracking Limited');
+        if (!isTracking) {
+          setIsTracking(true);
+        }
+        if (!arError) {
+          setArError(
+            'Theo dõi bị giới hạn. Vui lòng cung cấp nhiều ánh sáng hơn hoặc di chuyển thiết bị.'
+          );
+        }
+      }
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in onInitialized:', error);
+      console.error('Stack:', error.stack);
     }
   };
   // ---------------------------------------------
@@ -192,9 +288,70 @@ export default function ARCameraView({
     }
   };
 
+  // Show loading screen during AR session transition
+  if (isTransitioning) {
+    return (
+      <View
+        style={[
+          styles.fullScreen,
+          {
+            backgroundColor: 'black',
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <Text
+          style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}
+        >
+          Đang chuyển chế độ...
+        </Text>
+        <Text style={{ color: '#888', fontSize: 14, marginTop: 10 }}>
+          Vui lòng đợi
+        </Text>
+      </View>
+    );
+  }
+
   // Handle model mode - show ARModelView as full screen instead of dummy
   if (mode === 'model') {
-    return <ARModelView onClose={() => setMode('measure')} />;
+    console.log(
+      '🔄 Rendering Model Mode at:',
+      new Date().toISOString()
+    );
+    console.log('📊 Current State:', {
+      isTracking,
+      arError,
+      points: points.length,
+    });
+
+    return (
+      <ErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('🚨 ARModelView CRASHED:');
+          console.error('Error:', error.message);
+          console.error('Stack:', error.stack);
+          console.error('Component Stack:', errorInfo.componentStack);
+          // Return to measure mode on crash
+          Alert.alert(
+            'Lỗi chế độ Model',
+            `Không thể khởi động chế độ Model:\n${error.message}\n\nQuay về chế độ đo đạc...`,
+            [{ text: 'Đồng ý' }]
+          );
+          setTimeout(() => setMode('measure'), 100);
+        }}
+      >
+        <ARModelView
+          onClose={() => {
+            console.log(
+              '🔙 Closing Model Mode, returning to Measure at:',
+              new Date().toISOString()
+            );
+            setMode('measure');
+          }}
+        />
+      </ErrorBoundary>
+    );
   }
 
   return (
