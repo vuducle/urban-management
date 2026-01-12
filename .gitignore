@@ -51,3 +51,6 @@ _vscode/
 ._vscode/
 ._idea/
 .vscode/
+
+package-lock.json
+yarn.lock
