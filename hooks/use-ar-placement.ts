@@ -229,6 +229,22 @@ export const useARPlacement = ({
     );
   };
 
+  const updateModelScale = (modelId: number, value: number) => {
+    setPlacedModels((prev) =>
+      prev.map((model) => {
+        if (model.id === modelId) {
+          const newScale = [value, value, value];
+          console.log(
+            `📏 Updated scale to ${value} for model ${modelId}`,
+            newScale
+          );
+          return { ...model, scale: newScale };
+        }
+        return model;
+      })
+    );
+  };
+
   return {
     placedModels,
     selectedModel,
@@ -236,5 +252,6 @@ export const useARPlacement = ({
     handleAddObject,
     handleUndo,
     updateModelRotation,
+    updateModelScale,
   };
 };

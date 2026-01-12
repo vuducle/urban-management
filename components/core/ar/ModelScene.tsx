@@ -126,12 +126,12 @@ export const ModelScene = (props: ModelSceneProps) => {
                   source={config.source}
                   type={config.type}
                   position={[0, 0, 0]}
+                  rotation={model.rotation}
                   scale={config.scale}
                   resources={config.resources}
                   lightReceivingBitMask={1}
                   shadowCastingBitMask={0}
                   highAccuracyEvents={true}
-                  transformBehaviors={['billboardY']}
                   animation={undefined}
                   onLoadStart={() => setIsLoadingModel(true)}
                   onLoadEnd={() => setIsLoadingModel(false)}

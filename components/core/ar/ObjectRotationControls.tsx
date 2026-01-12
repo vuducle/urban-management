@@ -15,11 +15,15 @@ interface ObjectRotationControlsProps {
     axis: 'x' | 'y' | 'z',
     value: number
   ) => void;
+  onScaleChange: (modelId: number, value: number) => void;
+  onClose: () => void;
 }
 
 export const ObjectRotationControls = ({
   selectedObject,
   onRotationChange,
+  onScaleChange,
+  onClose,
 }: ObjectRotationControlsProps) => {
   const [expandedAxis, setExpandedAxis] = useState<
     'x' | 'y' | 'z' | null
@@ -115,17 +119,65 @@ export const ObjectRotationControls = ({
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      <View style={styles.header}>
-        <Text style={styles.title}>Rotate Object</Text>
-        <Text style={styles.modelType}>
-          {selectedObject.type.toUpperCase()}
-        </Text>
+      <View style={styles.headerRow}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Transform Object</Text>
+          <Text style={styles.modelType}>
+            {selectedObject.type.toUpperCase()}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+        >
+          <Ionicons name="close-circle" size={28} color="#FF6B6B" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.axesContainer}>
         <RotationAxis axis="x" label="X" color="#FF6B6B" />
         <RotationAxis axis="y" label="Y" color="#00C851" />
         <RotationAxis axis="z" label="Z" color="#33B5E5" />
+      </View>
+
+      {/* Scale Controls */}
+      <View style={styles.scaleSection}>
+        <Text style={styles.scaleTitle}>Scale</Text>
+        <View style={styles.scaleControls}>
+          <TouchableOpacity
+            style={styles.scaleButton}
+            onPress={() => {
+              const currentScale = selectedObject.scale[0] || 1;
+              const newScale = Math.max(0.1, currentScale - 0.1);
+              onScaleChange(selectedObject.id, newScale);
+            }}
+          >
+            <Ionicons
+              name="remove-circle"
+              size={28}
+              color="#FF6B6B"
+            />
+            <Text style={styles.scaleButtonText}>Shrink</Text>
+          </TouchableOpacity>
+
+          <View style={styles.scaleDisplayBox}>
+            <Text style={styles.scaleValue}>
+              {(selectedObject.scale[0] || 1).toFixed(2)}x
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.scaleButton}
+            onPress={() => {
+              const currentScale = selectedObject.scale[0] || 1;
+              const newScale = Math.min(5, currentScale + 0.1);
+              onScaleChange(selectedObject.id, newScale);
+            }}
+          >
+            <Ionicons name="add-circle" size={28} color="#33B5E5" />
+            <Text style={styles.scaleButtonText}>Grow</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.footer}>
@@ -154,6 +206,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  closeButton: {
+    padding: 4,
   },
   title: {
     fontSize: 16,
@@ -220,5 +282,46 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#888',
     textAlign: 'center',
+  },
+  scaleSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  scaleTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  scaleControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scaleButton: {
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  scaleButtonText: {
+    fontSize: 10,
+    color: '#fff',
+    marginTop: 2,
+  },
+  scaleDisplayBox: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scaleValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#33B5E5',
   },
 });
