@@ -8,7 +8,7 @@ import {
   ViroNode,
   ViroSphere,
 } from '@reactvision/react-viro';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   MODEL_CONFIGS,
   PlacedModel,
@@ -31,9 +31,9 @@ export const ModelScene = (props: ModelSceneProps) => {
     onModelClick,
   } = props.sceneNavigator.viroAppProps;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (onRegisterNavigator && props.sceneNavigator) {
-      console.log('🔗 Registering sceneNavigator to parent');
+      // console.log('🔗 Registering sceneNavigator to parent');
       onRegisterNavigator(props.sceneNavigator);
     }
   }, []);

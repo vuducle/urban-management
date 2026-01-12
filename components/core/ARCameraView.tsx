@@ -126,7 +126,10 @@ export default function ARCameraView({
   const onCameraTransformUpdate = (cameraTransform: any) => {
     cameraPositionRef.current = cameraTransform;
   };
-
+  /**
+   * Handles adding a measurement point at the current camera position.
+   * @returns
+   */
   const handleAddPoint = () => {
     if (!cameraPositionRef.current) {
       Alert.alert(

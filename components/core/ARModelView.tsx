@@ -65,6 +65,8 @@ export default function ARModelView({
     handleUndo,
     updateModelRotation,
     updateModelScale,
+    updateModelPosition,
+    resetModelTransform,
   } = useARPlacement({
     isTracking,
     planesDetected,
@@ -185,6 +187,18 @@ export default function ARModelView({
 
   const handleScaleChange = (modelId: number, value: number) => {
     updateModelScale(modelId, value);
+  };
+
+  const handlePositionChange = (
+    modelId: number,
+    axis: 'x' | 'y' | 'z',
+    delta: number
+  ) => {
+    updateModelPosition(modelId, axis, delta);
+  };
+
+  const handleResetTransform = (modelId: number) => {
+    resetModelTransform(modelId);
   };
 
   const onRegisterNavigator = (navigator: any) => {
@@ -423,6 +437,8 @@ export default function ARModelView({
           }
           onRotationChange={handleRotationChange}
           onScaleChange={handleScaleChange}
+          onPositionChange={handlePositionChange}
+          onReset={handleResetTransform}
           onClose={() => setSelectedObjectId(null)}
         />
       )}

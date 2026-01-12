@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { ModelType, PlacedModel } from '../constants/ar-models';
+import {
+  ModelType,
+  PlacedModel,
+  MODEL_CONFIGS,
+} from '../constants/ar-models';
 
 interface UseARPlacementProps {
   isTracking: boolean;
@@ -19,6 +23,10 @@ export const useARPlacement = ({
   const [selectedModel, setSelectedModel] =
     useState<ModelType>('cube');
 
+  /**
+   * Calculate the intersection point of the camera's forward ray with detected planes
+   * and return the closest intersection point to the camera.
+   */
   const calculateRayPlaneIntersection = (
     camPos: number[],
     camForward: number[]
@@ -65,6 +73,10 @@ export const useARPlacement = ({
     return closestIntersection;
   };
 
+  /**
+   * Place model in front of the camera at a default distance and height
+   * if no plane intersection is found.
+   */
   const placeFallback = () => {
     if (cameraPositionRef.current) {
       const { position: camPos, forward: camForward } =
@@ -91,6 +103,10 @@ export const useARPlacement = ({
     }
   };
 
+  /**
+   * Place the selected model at the specified position
+   * with appropriate rotation based on model type.
+   */
   const placeModel = (position: number[]) => {
     try {
       console.log('🔧 placeModel called with position:', position);
@@ -129,6 +145,10 @@ export const useARPlacement = ({
     }
   };
 
+  /**
+   * Handle adding a new object in AR scene
+   * with robust checks and fallbacks.
+   */
   const handleAddObject = async () => {
     try {
       console.log(
@@ -206,6 +226,10 @@ export const useARPlacement = ({
   const handleUndo = () =>
     setPlacedModels((prev) => prev.slice(0, -1));
 
+  /**
+   * Update the rotation of the specified model
+   * on the given axis.
+   */
   const updateModelRotation = (
     modelId: number,
     axis: 'x' | 'y' | 'z',
@@ -229,6 +253,10 @@ export const useARPlacement = ({
     );
   };
 
+  /**
+   * Update the scale of the specified model
+   * uniformly across all axes.
+   */
   const updateModelScale = (modelId: number, value: number) => {
     setPlacedModels((prev) =>
       prev.map((model) => {
@@ -245,6 +273,57 @@ export const useARPlacement = ({
     );
   };
 
+  /**
+   * Update the position of the specified model
+   * on the given axis by a delta amount.
+   */
+  const updateModelPosition = (
+    modelId: number,
+    axis: 'x' | 'y' | 'z',
+    delta: number
+  ) => {
+    const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
+
+    setPlacedModels((prev) =>
+      prev.map((model) => {
+        if (model.id === modelId) {
+          const newPosition = [...model.position];
+          newPosition[axisIndex] += delta;
+          console.log(
+            `📍 Moved ${axis} axis by ${delta} for model ${modelId}`,
+            newPosition
+          );
+          return { ...model, position: newPosition };
+        }
+        return model;
+      })
+    );
+  };
+
+  /**
+   * Reset the transform (position, rotation, scale) of the specified model
+   *
+   */
+  const resetModelTransform = (modelId: number) => {
+    setPlacedModels((prev) =>
+      prev.map((model) => {
+        if (model.id === modelId) {
+          const config = MODEL_CONFIGS[model.type];
+          console.log(`🔄 Reset transform for model ${modelId}`, {
+            rotation: [0, 0, 0],
+            scale: config.scale,
+          });
+          return {
+            ...model,
+            rotation: [0, 0, 0],
+            scale: config.scale,
+          };
+        }
+        return model;
+      })
+    );
+  };
+
   return {
     placedModels,
     selectedModel,
@@ -253,5 +332,7 @@ export const useARPlacement = ({
     handleUndo,
     updateModelRotation,
     updateModelScale,
+    updateModelPosition,
+    resetModelTransform,
   };
 };
