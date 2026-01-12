@@ -1,11 +1,4 @@
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  SHADOWS,
-  SPACING,
-} from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import { formatHistoryData } from '@/hooks/format-history-data';
 import { getStatusConfig } from '@/hooks/get-status';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,12 +7,12 @@ import {
   Image,
   ScrollView,
   SectionList,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ProfileScreenStyles } from '@/components/styles';
 
 const RAW_HISTORY = [
   {
@@ -82,19 +75,21 @@ const HistoryScreen = () => {
   }, [activeFilter]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={ProfileScreenStyles.container}>
+      <View style={ProfileScreenStyles.header}>
         {/* TODO: Implement it later with real data */}
-        <Text style={styles.headerTitle}>Danh sách Phản ánh</Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
+        <Text style={ProfileScreenStyles.headerTitle}>
+          Danh sách Phản ánh
+        </Text>
+        <View style={ProfileScreenStyles.headerIcons}>
+          <TouchableOpacity style={ProfileScreenStyles.iconButton}>
             <Ionicons
               name="search"
               size={24}
               color={COLORS.gray700}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={ProfileScreenStyles.iconButton}>
             <Ionicons
               name="notifications"
               size={24}
@@ -109,14 +104,17 @@ const HistoryScreen = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContent}
+          contentContainerStyle={
+            ProfileScreenStyles.filterScrollContent
+          }
         >
           {/* Chip: Tất cả */}
           <TouchableOpacity
             onPress={() => setActiveFilter('Tất cả')}
             style={[
-              styles.chip,
-              activeFilter === 'Tất cả' && styles.activeChip,
+              ProfileScreenStyles.chip,
+              activeFilter === 'Tất cả' &&
+                ProfileScreenStyles.activeChip,
             ]}
           >
             <MaterialCommunityIcons
@@ -130,8 +128,9 @@ const HistoryScreen = () => {
             />
             <Text
               style={[
-                styles.chipText,
-                activeFilter === 'Tất cả' && styles.activeChipText,
+                ProfileScreenStyles.chipText,
+                activeFilter === 'Tất cả' &&
+                  ProfileScreenStyles.activeChipText,
               ]}
             >
               Tất cả
@@ -142,8 +141,9 @@ const HistoryScreen = () => {
           <TouchableOpacity
             onPress={() => setActiveFilter('Tiếp nhận')}
             style={[
-              styles.chip,
-              activeFilter === 'Tiếp nhận' && styles.activeChip,
+              ProfileScreenStyles.chip,
+              activeFilter === 'Tiếp nhận' &&
+                ProfileScreenStyles.activeChip,
             ]}
           >
             <MaterialCommunityIcons
@@ -157,8 +157,9 @@ const HistoryScreen = () => {
             />
             <Text
               style={[
-                styles.chipText,
-                activeFilter === 'Tiếp nhận' && styles.activeChipText,
+                ProfileScreenStyles.chipText,
+                activeFilter === 'Tiếp nhận' &&
+                  ProfileScreenStyles.activeChipText,
               ]}
             >
               Tiếp nhận
@@ -169,8 +170,9 @@ const HistoryScreen = () => {
           <TouchableOpacity
             onPress={() => setActiveFilter('Đang xử lý')}
             style={[
-              styles.chip,
-              activeFilter === 'Đang xử lý' && styles.activeChip,
+              ProfileScreenStyles.chip,
+              activeFilter === 'Đang xử lý' &&
+                ProfileScreenStyles.activeChip,
             ]}
           >
             <MaterialCommunityIcons
@@ -184,9 +186,9 @@ const HistoryScreen = () => {
             />
             <Text
               style={[
-                styles.chipText,
+                ProfileScreenStyles.chipText,
                 activeFilter === 'Đang xử lý' &&
-                  styles.activeChipText,
+                  ProfileScreenStyles.activeChipText,
               ]}
             >
               Xử lý
@@ -197,8 +199,9 @@ const HistoryScreen = () => {
           <TouchableOpacity
             onPress={() => setActiveFilter('Hoàn thành')}
             style={[
-              styles.chip,
-              activeFilter === 'Hoàn thành' && styles.activeChip,
+              ProfileScreenStyles.chip,
+              activeFilter === 'Hoàn thành' &&
+                ProfileScreenStyles.activeChip,
             ]}
           >
             <Ionicons
@@ -212,9 +215,9 @@ const HistoryScreen = () => {
             />
             <Text
               style={[
-                styles.chipText,
+                ProfileScreenStyles.chipText,
                 activeFilter === 'Hoàn thành' &&
-                  styles.activeChipText,
+                  ProfileScreenStyles.activeChipText,
               ]}
             >
               Xong
@@ -225,8 +228,9 @@ const HistoryScreen = () => {
           <TouchableOpacity
             onPress={() => setActiveFilter('Đã Huỷ')}
             style={[
-              styles.chip,
-              activeFilter === 'Đã Huỷ' && styles.activeChip,
+              ProfileScreenStyles.chip,
+              activeFilter === 'Đã Huỷ' &&
+                ProfileScreenStyles.activeChip,
             ]}
           >
             <MaterialCommunityIcons
@@ -240,8 +244,9 @@ const HistoryScreen = () => {
             />
             <Text
               style={[
-                styles.chipText,
-                activeFilter === 'Đã Huỷ' && styles.activeChipText,
+                ProfileScreenStyles.chipText,
+                activeFilter === 'Đã Huỷ' &&
+                  ProfileScreenStyles.activeChipText,
               ]}
             >
               Huỷ
@@ -253,27 +258,35 @@ const HistoryScreen = () => {
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={ProfileScreenStyles.listContent}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.dateHeader}>
-            <Text style={styles.dateHeaderText}>{title}</Text>
-            <View style={styles.dateLine} />
+          <View style={ProfileScreenStyles.dateHeader}>
+            <Text style={ProfileScreenStyles.dateHeaderText}>
+              {title}
+            </Text>
+            <View style={ProfileScreenStyles.dateLine} />
           </View>
         )}
         renderItem={({ item }) => {
           const statusConfig = getStatusConfig(item.status);
           return (
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity style={ProfileScreenStyles.card}>
               <Image
                 source={{ uri: item.image }}
-                style={styles.itemImage}
+                style={ProfileScreenStyles.itemImage}
               />
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
+              <View style={ProfileScreenStyles.itemInfo}>
+                <Text
+                  style={ProfileScreenStyles.itemTitle}
+                  numberOfLines={1}
+                >
                   {item.title}
                 </Text>
-                <Text style={styles.itemAddress} numberOfLines={1}>
+                <Text
+                  style={ProfileScreenStyles.itemAddress}
+                  numberOfLines={1}
+                >
                   {item.address}
                 </Text>
                 <Text
@@ -287,10 +300,10 @@ const HistoryScreen = () => {
                 >
                   {item.date}
                 </Text>
-                <View style={styles.footerRow}>
+                <View style={ProfileScreenStyles.footerRow}>
                   <View
                     style={[
-                      styles.statusBadge,
+                      ProfileScreenStyles.statusBadge,
                       {
                         backgroundColor: statusConfig.bg,
                         flexDirection: 'row',
@@ -306,14 +319,16 @@ const HistoryScreen = () => {
                     />
                     <Text
                       style={[
-                        styles.statusText,
+                        ProfileScreenStyles.statusText,
                         { color: statusConfig.color },
                       ]}
                     >
                       {item.status}
                     </Text>
                   </View>
-                  <Text style={styles.timeText}>{item.time}</Text>
+                  <Text style={ProfileScreenStyles.timeText}>
+                    {item.time}
+                  </Text>
                 </View>
               </View>
               <Ionicons
@@ -328,114 +343,5 @@ const HistoryScreen = () => {
     </SafeAreaView>
   );
 };
-
-// Styles bleiben fast identisch, nur kleine Korrekturen für die Chips
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: SPACING.lg,
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.gray900,
-  },
-  headerIcons: { flexDirection: 'row' },
-  iconButton: { marginLeft: SPACING.md },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    marginRight: SPACING.sm,
-  },
-  activeChip: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  activeChipText: { color: COLORS.white },
-  chipText: {
-    color: COLORS.gray600,
-    marginLeft: 4,
-    fontWeight: FONT_WEIGHTS.medium,
-  },
-  listContent: { paddingHorizontal: SPACING.lg, paddingBottom: 100 },
-  dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.md,
-  },
-  dateHeaderText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.slate,
-    fontWeight: FONT_WEIGHTS.bold,
-    marginRight: 10,
-  },
-  dateLine: { flex: 1, height: 1, backgroundColor: COLORS.gray200 },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.md,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  itemImage: {
-    width: 70,
-    height: 70,
-    borderRadius: BORDER_RADIUS.lg,
-    marginRight: SPACING.md,
-  },
-  itemInfo: { flex: 1 },
-  itemTitle: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.gray900,
-  },
-  itemAddress: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray500,
-    marginVertical: 4,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  timeText: { fontSize: FONT_SIZES.xs, color: COLORS.gray400 },
-
-  filterScrollContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.lg,
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-});
 
 export default HistoryScreen;

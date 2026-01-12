@@ -1,18 +1,8 @@
-import {
-  BORDER_RADIUS,
-  COLORS,
-  SHADOWS,
-  SPACING,
-} from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import Entypo from '@expo/vector-icons/Entypo';
+import { IncidentMapStyles } from '../styles';
 import React from 'react';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import MapView, {
   Marker,
   PROVIDER_APPLE,
@@ -47,20 +37,20 @@ const IncidentMap = () => {
     Platform.OS === 'ios' ? PROVIDER_APPLE : PROVIDER_GOOGLE;
 
   return (
-    <View style={styles.wrapper}>
+    <View style={IncidentMapStyles.wrapper}>
       {/* Header Section */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Bản đồ sự cố</Text>
+      <View style={IncidentMapStyles.header}>
+        <Text style={IncidentMapStyles.title}>Bản đồ sự cố</Text>
         <TouchableOpacity>
-          <Text style={styles.expandText}>Mở rộng</Text>
+          <Text style={IncidentMapStyles.expandText}>Mở rộng</Text>
         </TouchableOpacity>
       </View>
 
       {/* Map Container */}
-      <View style={styles.mapContainer}>
+      <View style={IncidentMapStyles.mapContainer}>
         <MapView
           provider={provider}
-          style={styles.map}
+          style={IncidentMapStyles.map}
           initialRegion={{
             latitude: 21.0285,
             longitude: 105.8542,
@@ -82,72 +72,20 @@ const IncidentMap = () => {
         </MapView>
 
         {/* Details Button - bottom right */}
-        <TouchableOpacity style={styles.detailsButton}>
+        <TouchableOpacity style={IncidentMapStyles.detailsButton}>
           <Entypo
             name="map"
             size={18}
             color={COLORS.primary}
-            style={styles.buttonIcon}
+            style={IncidentMapStyles.buttonIcon}
           />
-          <Text style={styles.detailsText}>Xem chi tiết</Text>
+          <Text style={IncidentMapStyles.detailsText}>
+            Xem chi tiết
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wrapper: {
-    paddingHorizontal: SPACING.lg,
-    marginTop: SPACING['2xl'],
-    marginBottom: SPACING['2xl'],
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.gray900,
-  },
-  expandText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  mapContainer: {
-    height: 180,
-    width: '100%',
-    borderRadius: BORDER_RADIUS['2xl'],
-    overflow: 'hidden',
-    ...SHADOWS.md,
-  },
-  map: {
-    flex: 1,
-  },
-  detailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: COLORS.white,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    ...SHADOWS.sm,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  detailsText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.gray800,
-  },
-});
 
 export default IncidentMap;

@@ -1,9 +1,4 @@
-import {
-  BORDER_RADIUS,
-  COLORS,
-  SHADOWS,
-  SPACING,
-} from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import {
   Ionicons,
   MaterialCommunityIcons,
@@ -11,14 +6,9 @@ import {
 } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LayoutStyles } from '@/components/styles';
 
 interface CustomTabBarProps {
   state: any;
@@ -58,12 +48,12 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.container}>
-        <View style={styles.tabBarMain}>
+    <SafeAreaView style={LayoutStyles.container}>
+      <View style={LayoutStyles.container}>
+        <View style={LayoutStyles.tabBarMain}>
           {/* Tab: Overview (index) */}
           <TouchableOpacity
-            style={styles.tabItem}
+            style={LayoutStyles.tabItem}
             onPress={() =>
               handleTabPress('index', getIsFocused('index'))
             }
@@ -77,7 +67,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             />
             <Text
               style={[
-                styles.tabLabel,
+                LayoutStyles.tabLabel,
                 {
                   color: getIsFocused('index')
                     ? COLORS.primary
@@ -91,7 +81,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
 
           {/* Tab: Map (ban-do) */}
           <TouchableOpacity
-            style={styles.tabItem}
+            style={LayoutStyles.tabItem}
             onPress={() =>
               handleTabPress('ban-do', getIsFocused('ban-do'))
             }
@@ -105,7 +95,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             />
             <Text
               style={[
-                styles.tabLabel,
+                LayoutStyles.tabLabel,
                 {
                   color: getIsFocused('ban-do')
                     ? COLORS.primary
@@ -117,11 +107,11 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.placeholder} />
+          <View style={LayoutStyles.placeholder} />
 
           {/* Tab: History (lich-su) */}
           <TouchableOpacity
-            style={styles.tabItem}
+            style={LayoutStyles.tabItem}
             onPress={() =>
               handleTabPress('lich-su', getIsFocused('lich-su'))
             }
@@ -137,7 +127,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             />
             <Text
               style={[
-                styles.tabLabel,
+                LayoutStyles.tabLabel,
                 {
                   color: getIsFocused('lich-su')
                     ? COLORS.primary
@@ -151,7 +141,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
 
           {/* Tab: Profile - Hồ sơ */}
           <TouchableOpacity
-            style={styles.tabItem}
+            style={LayoutStyles.tabItem}
             onPress={() =>
               handleTabPress('ho-so', getIsFocused('ho-so'))
             }
@@ -165,7 +155,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
             />
             <Text
               style={[
-                styles.tabLabel,
+                LayoutStyles.tabLabel,
                 {
                   color: getIsFocused('ho-so')
                     ? COLORS.primary
@@ -180,7 +170,7 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
 
         {/* Floating Center Button (+) */}
         <TouchableOpacity
-          style={styles.fabButton}
+          style={LayoutStyles.fabButton}
           activeOpacity={0.8}
           onPress={handleFabPress}
         >
@@ -210,54 +200,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  tabBarMain: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    width: '100%',
-    height: 70,
-    paddingBottom: Platform.OS === 'ios' ? 15 : 0,
-    borderTopLeftRadius: BORDER_RADIUS['2xl'],
-    borderTopRightRadius: BORDER_RADIUS['2xl'],
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    ...SHADOWS.lg,
-  },
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  tabLabel: {
-    fontSize: 10,
-    marginTop: SPACING.xs,
-    color: COLORS.slate,
-    fontWeight: '500',
-  },
-  placeholder: {
-    width: 65,
-  },
-  fabButton: {
-    position: 'absolute',
-    top: -30,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-  },
-});

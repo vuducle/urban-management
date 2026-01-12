@@ -4,7 +4,6 @@ import {
   Alert,
   Linking,
   Platform,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -12,6 +11,7 @@ import { Camera } from 'expo-camera';
 
 import ErrorBoundary from '../ErrorBoundary';
 import ARModelView from './ARModelView';
+import { ARCameraViewStyles } from '../styles';
 
 export default function ARCameraView({
   onClose,
@@ -71,10 +71,12 @@ export default function ARCameraView({
   // Show loading screen while waiting for permissions and AR initialization
   if (hasCameraPermission === null || !isARReady) {
     return (
-      <View style={styles.fullScreen}>
-        <View style={styles.loadingContainer}>
+      <View style={ARCameraViewStyles.fullScreen}>
+        <View style={ARCameraViewStyles.loadingContainer}>
           <ActivityIndicator size="large" color="#34C759" />
-          <Text style={styles.loadingText}>Đang khởi tạo AR...</Text>
+          <Text style={ARCameraViewStyles.loadingText}>
+            Đang khởi tạo AR...
+          </Text>
         </View>
       </View>
     );
@@ -83,9 +85,9 @@ export default function ARCameraView({
   // Show error if camera permission denied
   if (hasCameraPermission === false) {
     return (
-      <View style={styles.fullScreen}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>
+      <View style={ARCameraViewStyles.fullScreen}>
+        <View style={ARCameraViewStyles.errorContainer}>
+          <Text style={ARCameraViewStyles.errorText}>
             Camera permission is required for AR features
           </Text>
         </View>
@@ -95,7 +97,11 @@ export default function ARCameraView({
 
   // Show Model View
   return (
-    <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
+    <View
+      style={ARCameraViewStyles.fullScreen}
+      ref={viewRef}
+      collapsable={false}
+    >
       <ErrorBoundary
         onError={(error) => {
           console.error('🚨 ARModelView CRASHED:', error.message);
@@ -108,30 +114,3 @@ export default function ARCameraView({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fullScreen: { flex: 1, backgroundColor: 'black' },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
-  },
-  loadingText: {
-    color: 'white',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
-    padding: 20,
-  },
-  errorText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});

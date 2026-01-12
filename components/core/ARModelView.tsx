@@ -6,7 +6,6 @@ import {
   Alert,
   Linking,
   Platform,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -23,6 +22,7 @@ import { AROverlay } from './ar/AROverlay';
 import { ModelScene } from './ar/ModelScene';
 import { ObjectRotationControls } from './ar/ObjectRotationControls';
 import { ObjectSelector } from './ar/ObjectSelector';
+import { ARModelViewStyles } from '../styles';
 
 export default function ARModelView({
   onClose,
@@ -387,10 +387,12 @@ export default function ARModelView({
   // Show loading screen while waiting for permissions and AR initialization
   if (hasCameraPermission === null || !isARReady) {
     return (
-      <View style={styles.fullScreen}>
-        <View style={styles.loadingContainer}>
+      <View style={ARModelViewStyles.fullScreen}>
+        <View style={ARModelViewStyles.loadingContainer}>
           <ActivityIndicator size="large" color="#34C759" />
-          <Text style={styles.loadingText}>Đang khởi tạo AR...</Text>
+          <Text style={ARModelViewStyles.loadingText}>
+            Đang khởi tạo AR...
+          </Text>
         </View>
       </View>
     );
@@ -399,9 +401,9 @@ export default function ARModelView({
   // Show error if camera permission denied
   if (!hasCameraPermission) {
     return (
-      <View style={styles.fullScreen}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>
+      <View style={ARModelViewStyles.fullScreen}>
+        <View style={ARModelViewStyles.errorContainer}>
+          <Text style={ARModelViewStyles.errorText}>
             Yêu cầu quyền truy cập camera để sử dụng tính năng AR
           </Text>
         </View>
@@ -410,7 +412,11 @@ export default function ARModelView({
   }
 
   return (
-    <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
+    <View
+      style={ARModelViewStyles.fullScreen}
+      ref={viewRef}
+      collapsable={false}
+    >
       <ViroARSceneNavigator
         initialScene={{ scene: ModelScene }}
         viroAppProps={{
@@ -424,7 +430,7 @@ export default function ARModelView({
           onRegisterNavigator,
           onModelClick: handleModelClick,
         }}
-        style={StyleSheet.absoluteFill}
+        style={ARModelViewStyles.absoluteFill}
         worldAlignment="GravityAndHeading"
       />
 
@@ -477,30 +483,3 @@ export default function ARModelView({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fullScreen: { flex: 1, backgroundColor: 'black' },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
-  },
-  loadingText: {
-    color: 'white',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
-    padding: 20,
-  },
-  errorText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});

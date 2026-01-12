@@ -1,11 +1,4 @@
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  SHADOWS,
-  SPACING,
-} from '@/constants/colors';
+import { COLORS, SPACING } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -16,7 +9,6 @@ import {
   Image,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -27,6 +19,7 @@ import MapView, {
   PROVIDER_DEFAULT,
   PROVIDER_GOOGLE,
 } from 'react-native-maps';
+import { ModalStyles } from '@/components/styles';
 
 //feature threejs
 import ARCameraView from '@/components/core/ARCameraView';
@@ -65,15 +58,6 @@ export default function CreateReportModal() {
   const [isUserTyping, setIsUserTyping] = useState(false);
 
   const [isARMode, setIsARMode] = useState<boolean>(false);
-
-  const handleARCapture = (uri: string) => {
-    const newImage: UploadedImage = {
-      uri,
-      type: 'image',
-      name: `ar_photo_${Date.now()}.jpg`,
-    };
-    setImages([...images, newImage]);
-  };
 
   if (isARMode) {
     return (
@@ -381,13 +365,13 @@ export default function CreateReportModal() {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={ModalStyles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.sectionTitle}>Vị trí sự cố</Text>
+      <Text style={ModalStyles.sectionTitle}>Vị trí sự cố</Text>
 
-      <View style={styles.mapCard}>
-        <View style={styles.mapPlaceholder}>
+      <View style={ModalStyles.mapCard}>
+        <View style={ModalStyles.mapPlaceholder}>
           <MapView
             ref={mapRef}
             provider={
@@ -395,7 +379,7 @@ export default function CreateReportModal() {
                 ? PROVIDER_GOOGLE
                 : PROVIDER_DEFAULT
             }
-            style={styles.mapImage}
+            style={ModalStyles.mapImage}
             region={region}
             onRegionChangeComplete={(newRegion) => {
               setRegion(newRegion);
@@ -421,8 +405,8 @@ export default function CreateReportModal() {
         </View>
 
         {/* SEARCH LOCATION INPUT */}
-        <View style={styles.searchWrapper}>
-          <View style={styles.searchContainer}>
+        <View style={ModalStyles.searchWrapper}>
+          <View style={ModalStyles.searchContainer}>
             <Ionicons
               name="search"
               size={20}
@@ -430,7 +414,7 @@ export default function CreateReportModal() {
               style={{ marginLeft: SPACING.md }}
             />
             <TextInput
-              style={styles.searchInput}
+              style={ModalStyles.searchInput}
               placeholder="Tìm kiếm địa điểm (vd: Yoshiyoshi Ho Chi Minh)..."
               value={searchQuery}
               onChangeText={handleSearch}
@@ -455,7 +439,7 @@ export default function CreateReportModal() {
 
           {/* CURRENT LOCATION BUTTON */}
           <TouchableOpacity
-            style={styles.currentLocationBtn}
+            style={ModalStyles.currentLocationBtn}
             onPress={getCurrentLocation}
             disabled={loading}
           >
@@ -465,7 +449,7 @@ export default function CreateReportModal() {
               color={COLORS.primary}
               style={{ marginRight: SPACING.sm }}
             />
-            <Text style={styles.currentLocationText}>
+            <Text style={ModalStyles.currentLocationText}>
               Vị trí hiện tại
             </Text>
           </TouchableOpacity>
@@ -478,7 +462,7 @@ export default function CreateReportModal() {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.suggestionItem}
+                  style={ModalStyles.suggestionItem}
                   onPress={() => selectLocation(item)}
                 >
                   <Ionicons
@@ -489,35 +473,37 @@ export default function CreateReportModal() {
                   />
                   <View style={{ flex: 1 }}>
                     <Text
-                      style={styles.suggestionText}
+                      style={ModalStyles.suggestionText}
                       numberOfLines={1}
                     >
                       {item.address}
                     </Text>
-                    <Text style={styles.suggestionMeta}>
+                    <Text style={ModalStyles.suggestionMeta}>
                       {item.name}
                     </Text>
                   </View>
                 </TouchableOpacity>
               )}
-              style={styles.suggestionsDropdown}
+              style={ModalStyles.suggestionsDropdown}
             />
           )}
         </View>
       </View>
 
       {/* SECTION: Image Upload */}
-      <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Hình ảnh hiện trường</Text>
-        <Text style={styles.counter}>{images.length}/5</Text>
+      <View style={ModalStyles.headerRow}>
+        <Text style={ModalStyles.sectionTitle}>
+          Hình ảnh hiện trường
+        </Text>
+        <Text style={ModalStyles.counter}>{images.length}/5</Text>
       </View>
 
       {/* Upload Buttons */}
-      <View style={styles.uploadButtonsContainer}>
+      <View style={ModalStyles.uploadButtonsContainer}>
         <TouchableOpacity
           style={[
-            styles.uploadBtn,
-            images.length >= 5 && styles.uploadBtnDisabled,
+            ModalStyles.uploadBtn,
+            images.length >= 5 && ModalStyles.uploadBtnDisabled,
           ]}
           onPress={takePhoto}
           disabled={images.length >= 5}
@@ -531,7 +517,7 @@ export default function CreateReportModal() {
           />
           <Text
             style={[
-              styles.uploadBtnText,
+              ModalStyles.uploadBtnText,
               images.length >= 5 && { color: COLORS.gray400 },
             ]}
           >
@@ -541,8 +527,8 @@ export default function CreateReportModal() {
 
         <TouchableOpacity
           style={[
-            styles.uploadBtn,
-            images.length >= 5 && styles.uploadBtnDisabled,
+            ModalStyles.uploadBtn,
+            images.length >= 5 && ModalStyles.uploadBtnDisabled,
           ]}
           onPress={() => setIsARMode(true)}
           disabled={images.length >= 5}
@@ -556,7 +542,7 @@ export default function CreateReportModal() {
           />
           <Text
             style={[
-              styles.uploadBtnText,
+              ModalStyles.uploadBtnText,
               images.length >= 5 && { color: COLORS.gray400 },
             ]}
           >
@@ -566,8 +552,8 @@ export default function CreateReportModal() {
 
         <TouchableOpacity
           style={[
-            styles.uploadBtn,
-            images.length >= 5 && styles.uploadBtnDisabled,
+            ModalStyles.uploadBtn,
+            images.length >= 5 && ModalStyles.uploadBtnDisabled,
           ]}
           onPress={pickImage}
           disabled={images.length >= 5}
@@ -581,7 +567,7 @@ export default function CreateReportModal() {
           />
           <Text
             style={[
-              styles.uploadBtnText,
+              ModalStyles.uploadBtnText,
               images.length >= 5 && { color: COLORS.gray400 },
             ]}
           >
@@ -595,13 +581,13 @@ export default function CreateReportModal() {
         <FlatList
           data={images}
           renderItem={({ item, index }) => (
-            <View style={styles.imagePreviewContainer}>
+            <View style={ModalStyles.imagePreviewContainer}>
               <Image
                 source={{ uri: item.uri }}
-                style={styles.imagePreview}
+                style={ModalStyles.imagePreview}
               />
               <TouchableOpacity
-                style={styles.deleteImageBtn}
+                style={ModalStyles.deleteImageBtn}
                 onPress={() => removeImage(index)}
               >
                 <Ionicons
@@ -615,34 +601,34 @@ export default function CreateReportModal() {
           keyExtractor={(_, index) => `image-${index}`}
           numColumns={3}
           scrollEnabled={false}
-          columnWrapperStyle={styles.imageGridRow}
+          columnWrapperStyle={ModalStyles.imageGridRow}
         />
       )}
 
       {/* SECTION: Details Form */}
-      <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+      <Text style={ModalStyles.sectionTitle}>Thông tin chi tiết</Text>
 
-      <Text style={styles.label}>
+      <Text style={ModalStyles.label}>
         Tiêu đề phản ánh{' '}
         <Text style={{ color: COLORS.danger }}>*</Text>
       </Text>
       <TextInput
-        style={styles.input}
+        style={ModalStyles.input}
         placeholder="Ví dụ: Hố ga bị vỡ gây nguy hiểm"
       />
 
-      <Text style={styles.label}>
+      <Text style={ModalStyles.label}>
         Nội dung phản ánh{' '}
         <Text style={{ color: COLORS.danger }}>*</Text>
       </Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[ModalStyles.input, ModalStyles.textArea]}
         multiline
         placeholder="Mô tả chi tiết sự việc..."
       />
 
-      <Text style={styles.label}>Thời gian</Text>
-      <View style={styles.datePicker}>
+      <Text style={ModalStyles.label}>Thời gian</Text>
+      <View style={ModalStyles.datePicker}>
         <Text>10:30 - 24/05/2024</Text>
         <Ionicons
           name="calendar-outline"
@@ -652,244 +638,11 @@ export default function CreateReportModal() {
       </View>
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.submitBtn}>
+      <TouchableOpacity style={ModalStyles.submitBtn}>
         <Ionicons name="send" size={18} color="white" />
-        <Text style={styles.submitText}>Gửi Phản ánh</Text>
+        <Text style={ModalStyles.submitText}>Gửi Phản ánh</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
-
-let styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  content: { padding: SPACING.lg },
-  sectionTitle: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: FONT_WEIGHTS.bold,
-    marginBottom: SPACING.md,
-  },
-  mapCard: {
-    backgroundColor: 'white',
-    borderRadius: BORDER_RADIUS.xl,
-    overflow: 'hidden',
-    ...SHADOWS.sm,
-    marginBottom: SPACING.xl,
-  },
-  addressLabel: {
-    fontSize: 10,
-    color: COLORS.slate,
-    fontWeight: '700',
-  },
-  addressText: { fontSize: 13, color: COLORS.gray800 },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  counter: { color: COLORS.slate },
-  uploadBox: {
-    height: 160,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: COLORS.gray300,
-    borderRadius: BORDER_RADIUS.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: SPACING.md,
-    backgroundColor: 'white',
-  },
-  iconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  uploadText: {
-    marginTop: 8,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  uploadSub: { fontSize: 12, color: COLORS.slate },
-  label: {
-    marginTop: SPACING.lg,
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: 'white',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-  },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  datePicker: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-  },
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    height: 56,
-    borderRadius: BORDER_RADIUS.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 30,
-    ...SHADOWS.md,
-  },
-  submitText: { color: 'white', fontWeight: 'bold', marginLeft: 8 },
-
-  mapPlaceholder: {
-    height: 200,
-    backgroundColor: '#E2E8F0',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  mapImage: {
-    width: '100%',
-    height: '100%',
-  },
-  searchWrapper: {
-    backgroundColor: 'white',
-    padding: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray100,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray50,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray900,
-  },
-  currentLocationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.gray50,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.md,
-  },
-  currentLocationText: {
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.medium,
-    fontSize: FONT_SIZES.sm,
-  },
-  suggestionsDropdown: {
-    maxHeight: 250,
-    marginTop: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    overflow: 'hidden',
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
-    alignItems: 'center',
-  },
-  suggestionText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.medium,
-    color: COLORS.gray900,
-  },
-  suggestionMeta: {
-    fontSize: 11,
-    color: COLORS.gray500,
-    marginTop: 4,
-  },
-  locateBtn: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'white',
-    padding: 8,
-    borderRadius: BORDER_RADIUS.md,
-    ...SHADOWS.sm,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray100,
-  },
-  uploadButtonsContainer: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  uploadBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.sm,
-    ...SHADOWS.sm,
-  },
-  uploadBtnDisabled: {
-    borderColor: COLORS.gray300,
-    opacity: 0.6,
-  },
-  uploadBtnText: {
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
-    fontSize: FONT_SIZES.sm,
-  },
-  imageGridRow: {
-    gap: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  imagePreviewContainer: {
-    flex: 1,
-    position: 'relative',
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
-    ...SHADOWS.sm,
-  },
-  imagePreview: {
-    width: '100%',
-    aspectRatio: 1,
-    backgroundColor: COLORS.gray100,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  deleteImageBtn: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-    borderRadius: 50,
-    padding: 2,
-  },
-});
