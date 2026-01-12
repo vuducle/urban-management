@@ -52,5 +52,5 @@ _vscode/
 ._idea/
 .vscode/
 
-package-lock.json
+.package-lock.json
 yarn.lock
