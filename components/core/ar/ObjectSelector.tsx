@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ObjectSelectorStyles } from '../../styles';
+import { ObjectSelectorStyles } from '../../../assets/styles';
 import React, { useState } from 'react';
 import {
   ScrollView,

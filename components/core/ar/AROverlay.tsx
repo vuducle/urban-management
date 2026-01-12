@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { AROverlayStyles } from '../../styles';
+import { AROverlayStyles } from '../../../assets/styles';
 
 interface AROverlayProps {
   arError: string | null;

@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ErrorBoundaryStyles } from './styles';
+import { ErrorBoundaryStyles } from '../assets/styles';
 
 interface Props {
   children: ReactNode;

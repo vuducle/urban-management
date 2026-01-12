@@ -1,5 +1,5 @@
 import React from 'react';
-import { NewsSliderStyles } from '../styles';
+import { NewsSliderStyles } from '../../assets/styles';
 import {
   Dimensions,
   FlatList,

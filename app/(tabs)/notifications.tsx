@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { NotificationsStyles } from '@/components/styles';
+import { NotificationsStyles } from '@/assets/styles';
 
 // Type definition for better type safety
 interface Notification {

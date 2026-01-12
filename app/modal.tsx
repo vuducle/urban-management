@@ -19,7 +19,7 @@ import MapView, {
   PROVIDER_DEFAULT,
   PROVIDER_GOOGLE,
 } from 'react-native-maps';
-import { ModalStyles } from '@/components/styles';
+import { ModalStyles } from '@/assets/styles';
 
 //feature threejs
 import ARCameraView from '@/components/core/ARCameraView';

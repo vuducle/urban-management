@@ -1,5 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
-import { RecentActivityStyles } from '../styles';
+import { RecentActivityStyles } from '../../assets/styles';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 // Importiere hier deine Konstanten (Pfad eventuell anpassen)

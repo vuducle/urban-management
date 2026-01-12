@@ -1,6 +1,6 @@
 import { COLORS } from '@/constants/colors';
 import Entypo from '@expo/vector-icons/Entypo';
-import { IncidentMapStyles } from '../styles';
+import { IncidentMapStyles } from '../../assets/styles';
 import React from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import MapView, {

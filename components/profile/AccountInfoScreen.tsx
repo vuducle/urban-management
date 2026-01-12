@@ -7,7 +7,7 @@ import {
   SPACING,
 } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { AccountInfoScreenStyles } from '../styles';
+import { AccountInfoScreenStyles } from '../../assets/styles';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {

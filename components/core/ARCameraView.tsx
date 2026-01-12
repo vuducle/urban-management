@@ -11,7 +11,7 @@ import { Camera } from 'expo-camera';
 
 import ErrorBoundary from '../ErrorBoundary';
 import ARModelView from './ARModelView';
-import { ARCameraViewStyles } from '../styles';
+import { ARCameraViewStyles } from '../../assets/styles';
 
 export default function ARCameraView({
   onClose,

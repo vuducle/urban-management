@@ -1,5 +1,5 @@
 import { COLORS } from '@/constants/colors';
-import { StatCardStyles } from '../styles';
+import { StatCardStyles } from '../../assets/styles';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, View } from 'react-native';

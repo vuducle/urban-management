@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LoginPageStyles } from '@/components/styles';
+import { LoginPageStyles } from '@/assets/styles';
 
 // Enable className on third-party icons
 

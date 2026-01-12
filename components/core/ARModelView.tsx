@@ -22,7 +22,7 @@ import { AROverlay } from './ar/AROverlay';
 import { ModelScene } from './ar/ModelScene';
 import { ObjectRotationControls } from './ar/ObjectRotationControls';
 import { ObjectSelector } from './ar/ObjectSelector';
-import { ARModelViewStyles } from '../styles';
+import { ARModelViewStyles } from '../../assets/styles';
 
 export default function ARModelView({
   onClose,

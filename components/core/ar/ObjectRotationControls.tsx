@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { PlacedModel } from '../../../constants/ar-models';
-import { ObjectRotationControlsStyles } from '../../styles';
+import { ObjectRotationControlsStyles } from '../../../assets/styles';
 
 interface ObjectRotationControlsProps {
   selectedObject: PlacedModel | null;
