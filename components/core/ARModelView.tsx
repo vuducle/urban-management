@@ -15,8 +15,6 @@ import {
   ViroARSceneNavigator,
   ViroConstants,
 } from '@reactvision/react-viro';
-// Native Module for System Capture (Android 14+ Fix)
-import MyArScreenshot from '../../modules/my-ar-screenshot';
 
 import { useARPlacement } from '../../hooks/use-ar-placement';
 import { useARTracking } from '../../hooks/use-ar-tracking';
@@ -108,12 +106,12 @@ export default function ARModelView({
 
       if (status !== 'granted') {
         Alert.alert(
-          'Camera Permission Required',
-          'AR features require camera access. Please enable camera permissions in your settings.',
+          'Yêu cầu quyền truy cập camera',
+          'Tính năng AR yêu cầu quyền truy cập camera. Vui lòng bật quyền truy cập camera trong cài đặt của bạn.',
           [
-            { text: 'Cancel', onPress: handleClose, style: 'cancel' },
+            { text: 'Hủy', onPress: handleClose, style: 'cancel' },
             {
-              text: 'Settings',
+              text: 'Cài đặt',
               onPress: () => Linking.openSettings(),
             },
           ]
@@ -192,8 +190,8 @@ export default function ARModelView({
 
       if (permissionResponse.status !== 'granted') {
         Alert.alert(
-          'Permission denied',
-          'We need access to your photos to save screenshots.'
+          'Quyền bị từ chối',
+          'Chúng tôi cần quyền truy cập vào ảnh của bạn để lưu ảnh chụp màn hình.'
         );
         setIsCapturing(false);
         return;
@@ -201,120 +199,27 @@ export default function ARModelView({
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // --- Android Strategy: Native AR Screenshot (ARCore) ---
-      // We prioritize ARCore Frame Capture (Background + AR) to bypass SurfaceView/DRM issues.
-      // Fallback to System Recording (MediaProjection) if ARCore fails.
-      if (
-        Platform.OS === 'android' &&
-        MyArScreenshot &&
-        MyArScreenshot.requestScreenCapture
-      ) {
-        console.log('📸 Using Native AR Module for Android...');
-
-        try {
-          // Attempt 1: Direct ARCore Frame Capture
-          // This must be available in the native module
-          if (MyArScreenshot.captureARCore) {
-            console.log('🤖 Attempting ARCore direct capture...');
-            const arUri = await MyArScreenshot.captureARCore();
-            console.log('✅ ARCore Capture Success:', arUri);
-
-            if (arUri) {
-              const asset = await MediaLibrary.createAssetAsync(
-                arUri
-              );
-              const album = await MediaLibrary.getAlbumAsync(
-                'Urban Management AR'
-              );
-              if (album == null) {
-                await MediaLibrary.createAlbumAsync(
-                  'Urban Management AR',
-                  asset,
-                  false
-                );
-              } else {
-                await MediaLibrary.addAssetsToAlbumAsync(
-                  [asset],
-                  album,
-                  false
-                );
-              }
-              Alert.alert('✅ Saved', 'Snapshot saved to Gallery!');
-              setIsCapturing(false);
-              return;
-            }
-          }
-        } catch (arErr) {
-          console.warn(
-            '⚠️ ARCore capture failed, falling back to System Recorder:',
-            arErr
-          );
-        }
-
-        // 1. Reset state (Fallback)
-        if (MyArScreenshot.reset) {
-          await MyArScreenshot.reset();
-        }
-
-        // 2. Alert User (Required flow for MediaProjection)
+      // --- Android Strategy: Native Device Screenshot ---
+      // Screenshot feature is in development for AR mode on Android.
+      // Users should use device native screenshot: Volume Down + Power Button
+      if (Platform.OS === 'android') {
+        console.log('📸 Android screenshot - showing user guide...');
         Alert.alert(
-          'Capture Screenshot',
-          'Standard screenshot failed. Using System Recorder fallback. Please tap "Start" when prompted.',
+          '📸 Hướng dẫn chụp ảnh màn hình',
+          'Tính năng chụp ảnh màn hình AR hiện đang trong quá trình phát triển.\n\n' +
+            'Để chụp ảnh màn hình có nội dung AR:\n\n' +
+            '1. Nhấn và giữ nút Giảm âm lượng + Nút Nguồn cùng lúc\n' +
+            '2. Hoặc sử dụng cài đặt nhanh của thiết bị để chụp ảnh màn hình\n\n' +
+            'Ảnh chụp màn hình của bạn sẽ được lưu vào thư viện ảnh của thiết bị.',
           [
             {
-              text: 'Cancel',
-              style: 'cancel',
+              text: 'OK',
               onPress: () => setIsCapturing(false),
-            },
-            {
-              text: 'Start',
-              onPress: async () => {
-                try {
-                  // Wait for alert to dismiss visually
-                  await new Promise((r) => setTimeout(r, 300));
-
-                  // 3. Request System Capture
-                  const uri =
-                    await MyArScreenshot.requestScreenCapture();
-                  console.log('✅ Android System Capture URI:', uri);
-
-                  if (uri) {
-                    const asset = await MediaLibrary.createAssetAsync(
-                      uri
-                    );
-                    const album = await MediaLibrary.getAlbumAsync(
-                      'Urban Management AR'
-                    );
-                    if (album == null) {
-                      await MediaLibrary.createAlbumAsync(
-                        'Urban Management AR',
-                        asset,
-                        false
-                      );
-                    } else {
-                      await MediaLibrary.addAssetsToAlbumAsync(
-                        [asset],
-                        album,
-                        false
-                      );
-                    }
-                    Alert.alert('✅ Saved', 'Full screen captured!');
-                  } else {
-                    throw new Error(
-                      'No image returned from system capture'
-                    );
-                  }
-                } catch (sysErr) {
-                  console.error('System Capture Error:', sysErr);
-                  Alert.alert('Capture Failed', String(sysErr));
-                } finally {
-                  setIsCapturing(false);
-                }
-              },
+              style: 'default',
             },
           ]
         );
-        return; // Exit here, async flow handles the rest
+        return;
       }
 
       // --- iOS / Standard Viro Path ---
@@ -323,7 +228,7 @@ export default function ARModelView({
 
       if (!navigatorRef) {
         throw new Error(
-          'AR Scene not ready - please wait for AR to initialize'
+          'Cảnh AR chưa sẵn sàng - vui lòng đợi AR khởi tạo hoàn tất'
         );
       }
 
@@ -343,7 +248,7 @@ export default function ARModelView({
           );
         }
       } catch (screenshotError: any) {
-        let errorMessage = 'Unknown screenshot error';
+        let errorMessage = 'Lỗi chụp ảnh màn hình không xác định';
         const code =
           screenshotError?.code !== undefined
             ? screenshotError.code
@@ -352,19 +257,21 @@ export default function ARModelView({
         // Map Viro error codes based on docs
         switch (code) {
           case ViroConstants.RECORD_ERROR_NO_PERMISSION:
-            errorMessage = 'No permission to save screenshot';
+            errorMessage = 'Không có quyền lưu ảnh chụp màn hình';
             break;
           case ViroConstants.RECORD_ERROR_INITIALIZATION:
-            errorMessage = 'Initialization error during screenshot';
+            errorMessage =
+              'Lỗi khởi tạo trong quá trình chụp ảnh màn hình';
             break;
           case ViroConstants.RECORD_ERROR_WRITE_TO_FILE:
-            errorMessage = 'Failed to write screenshot to file';
+            errorMessage = 'Không thể ghi ảnh chụp màn hình vào tệp';
             break;
           case ViroConstants.RECORD_ERROR_ALREADY_RUNNING:
-            errorMessage = 'Screenshot/Recording already in progress';
+            errorMessage =
+              'Ảnh chụp màn hình/Quay phim đang được thực hiện';
             break;
           case ViroConstants.RECORD_ERROR_UNKNOWN:
-            errorMessage = 'Unknown Viro recording error';
+            errorMessage = 'Lỗi quay phim Viro không xác định';
             break;
           default:
             errorMessage = `Screenshot failed with code: ${code}`;
@@ -405,10 +312,13 @@ export default function ARModelView({
         );
       }
 
-      Alert.alert('Saved', 'Photo saved to gallery');
+      Alert.alert(
+        'Đã lưu',
+        'Ảnh đã được lưu vào thư viện ảnh của bạn.'
+      );
     } catch (e: any) {
       console.error('Screenshot error:', e);
-      Alert.alert('Error', e.message || 'Could not take photo');
+      Alert.alert('Lỗi', e.message || 'Không thể chụp ảnh màn hình');
     } finally {
       setIsCapturing(false);
     }
@@ -432,7 +342,7 @@ export default function ARModelView({
       <View style={styles.fullScreen}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            Camera permission is required for AR features
+            Yêu cầu quyền truy cập camera để sử dụng tính năng AR
           </Text>
         </View>
       </View>

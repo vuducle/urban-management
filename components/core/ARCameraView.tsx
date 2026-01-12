@@ -18,7 +18,7 @@ import {
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 
 // Import components and hooks
-import { captureRef, captureScreen } from 'react-native-view-shot';
+import { captureRef } from 'react-native-view-shot';
 import { useARScreenshotDebug } from '../../hooks/use-ar-screenshot-debug';
 import { useARTracking } from '../../hooks/use-ar-tracking';
 import { useMeasurement } from '../../hooks/use-measurement';
@@ -95,16 +95,16 @@ export default function ARCameraView({
 
       if (status !== 'granted') {
         Alert.alert(
-          'Camera Permission Required',
-          'AR features require camera access.',
+          'Yêu cầu quyền truy cập camera',
+          'Tính năng AR yêu cầu quyền truy cập camera.',
           [
             {
-              text: 'Cancel',
+              text: 'Hủy',
               onPress: () => onClose(),
               style: 'cancel',
             },
             {
-              text: 'Settings',
+              text: 'Cài đặt',
               onPress: () => Linking.openSettings(),
             },
           ]
@@ -129,7 +129,10 @@ export default function ARCameraView({
 
   const handleAddPoint = () => {
     if (!cameraPositionRef.current) {
-      Alert.alert('Not Ready', 'Wait for AR tracking to initialize');
+      Alert.alert(
+        'Chưa sẵn sàng',
+        'Vui lòng đợi AR theo dõi khởi tạo'
+      );
       return;
     }
 
@@ -142,35 +145,52 @@ export default function ARCameraView({
       ];
       addPoint(hitPosition);
     } catch (error) {
-      console.error('Error placing point:', error);
+      console.error('Error:', error);
     }
   };
 
   /**
-   * Captures a screenshot of the AR scene using native PixelCopy (Android 15 compatible)
-   * with fallback to ViewShot for UI-only capture.
+   * Captures a screenshot of the AR scene.
    *
-   * Path A (PRIMARY - Android only): Uses native PixelCopy API via MyArScreenshot module
-   *   - Directly captures GL frame buffer without storage issues
-   *   - Works on Android 15 with proper hardware buffer handling
-   *
-   * Path B (FALLBACK - if PixelCopy fails): Uses react-native-view-shot
-   *   - Captures UI overlay only (buttons, text, measurements)
-   *   - AR content will be transparent/missing
+   * On Android: Notifies user to use device native screenshot (Volume Down + Power Button)
+   * On iOS: Uses react-native-view-shot for UI capture
    */
   const saveScreenshot = async () => {
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Denied',
-          'Gallery access is required to save AR screenshots.'
+          'Quyền bị từ chối',
+          'Chúng tôi cần quyền truy cập vào ảnh của bạn để lưu ảnh chụp màn hình.'
+        );
+        return;
+      }
+
+      // --- Android Strategy: Device Native Screenshot ---
+      // Screenshot feature is in development for AR mode on Android.
+      // Users should use device native screenshot: Volume Down + Power Button
+      if (Platform.OS === 'android') {
+        console.log('📸 Android screenshot - showing user guide...');
+        Alert.alert(
+          '📸 Hướng dẫn chụp ảnh màn hình',
+          'Tính năng chụp ảnh màn hình AR hiện đang trong quá trình phát triển.\n\n' +
+            'Để chụp ảnh màn hình có nội dung AR:\n\n' +
+            '1. Nhấn và giữ nút Giảm âm lượng + Nút Nguồn cùng lúc\n' +
+            '2. Hoặc sử dụng cài đặt nhanh của thiết bị để chụp ảnh màn hình\n\n' +
+            'Ảnh chụp màn hình của bạn sẽ được lưu vào thư viện ảnh của thiết bị.',
+          [
+            {
+              text: 'OK',
+              onPress: () => setIsCapturing(false),
+              style: 'default',
+            },
+          ]
         );
         return;
       }
 
       // --- iOS / Standard Path ---
-      if (Platform.OS !== 'android') {
+      if (Platform.OS === 'ios') {
         if (viewRef.current) {
           const uri = await captureRef(viewRef.current, {
             format: 'png',
@@ -187,49 +207,6 @@ export default function ARCameraView({
         }
         return;
       }
-
-      // --- Android Strategy: react-native-view-shot with GLSurfaceView handling ---
-      if (Platform.OS === 'android') {
-        setIsCapturing(true);
-        try {
-          // Wait briefly to ensure UI is ready (optional, good practice)
-          await new Promise((r) => setTimeout(r, 100));
-
-          const uri = await captureScreen({
-            format: 'jpg',
-            quality: 0.8,
-            handleGLSurfaceViewOnAndroid: true, // Critical for AR/GL content
-          });
-
-          console.log('✅ Android GL Capture URI:', uri);
-
-          if (uri) {
-            const asset = await MediaLibrary.createAssetAsync(uri);
-            await MediaLibrary.createAlbumAsync(
-              'AR Measurements',
-              asset,
-              false
-            );
-            Alert.alert('✅ Success', 'Screenshot saved!');
-          } else {
-            throw new Error('No URI returned from captureScreen');
-          }
-        } catch (error) {
-          console.error('Android Screenshot Error:', error);
-          Alert.alert('Capture Failed', String(error));
-        } finally {
-          setIsCapturing(false);
-        }
-        return;
-      }
-
-      /*
-       * DEPRECATED: Viro Internal Screenshot
-       * (Produces black background on S21/Android 15)
-       * Kept as fallback only if Module is missing
-       */
-      let arUri: string | null = null;
-      // ...
     } catch (e) {
       console.error('Screenshot operation failed:', e);
       Alert.alert(
