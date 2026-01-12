@@ -1,5 +1,5 @@
 // AR Model configurations and types
-export type ModelType = 'cube' | 'leon' | 'tv' | 'house';
+export type ModelType = 'cube' | 'pipeline' | 'tv' | 'leon';
 
 export interface PlacedModel {
   id: number;
@@ -11,7 +11,7 @@ export interface PlacedModel {
 
 export interface ModelConfig {
   source: any;
-  type: 'OBJ' | 'GLB' | 'GLTF2' | 'VRX';
+  type: 'OBJ' | 'GLB' | 'GLTF' | 'VRX';
   scale: number[];
   resources?: any[];
 }
@@ -22,17 +22,17 @@ export const MODEL_CONFIGS: Record<ModelType, ModelConfig> = {
     type: 'GLB',
     scale: [0.3, 0.3, 0.3],
   },
-  leon: {
-    source: require('../assets/models/leon_s_kennedy.obj'),
-    type: 'OBJ',
-    scale: [1, 1, 1],
+  pipeline: {
+    source: require('../assets/models/pipeline/pipeline.glb'),
+    type: 'GLB',
+    scale: [0.01, 0.01, 0.01],
   },
   tv: {
     source: require('../assets/models/crt_tv.glb'),
     type: 'GLB',
     scale: [0.1, 0.1, 0.1],
   },
-  house: {
+  leon: {
     source: require('../assets/models/leon_s_kennedy.glb'),
     type: 'GLB',
     scale: [1, 1, 1],

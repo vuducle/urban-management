@@ -96,7 +96,7 @@ export const useARPlacement = ({
       console.log('🔧 placeModel called with position:', position);
 
       let rotation = [0, 0, 0];
-      if (selectedModel === 'leon') {
+      if (selectedModel === 'pipeline') {
         rotation = [0, 0, 0];
       }
 

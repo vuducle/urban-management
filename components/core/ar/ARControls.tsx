@@ -61,7 +61,7 @@ export const ARControls = ({
 
       {/* Model Selector */}
       <View style={styles.modelSelector}>
-        {(['cube', 'leon', 'tv', 'house'] as ModelType[]).map(
+        {(['cube', 'pipeline', 'tv', 'leon'] as ModelType[]).map(
           (type) => (
             <TouchableOpacity
               key={type}
