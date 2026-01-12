@@ -7,12 +7,12 @@ import {
   SPACING,
 } from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { AccountInfoScreenStyles } from '../styles';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Image,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -27,10 +27,10 @@ export default function AccountInfoScreen() {
 
   const router = useRouter();
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topHeader}>
+    <SafeAreaView style={AccountInfoScreenStyles.container}>
+      <View style={AccountInfoScreenStyles.topHeader}>
         <TouchableOpacity
-          style={styles.backBtn}
+          style={AccountInfoScreenStyles.backBtn}
           onPress={() => router.back()}
         >
           <Ionicons
@@ -39,52 +39,75 @@ export default function AccountInfoScreen() {
             color={COLORS.gray900}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
+        <Text style={AccountInfoScreenStyles.headerTitle}>
+          Thông tin tài khoản
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarWrapper}>
+      <ScrollView
+        contentContainerStyle={AccountInfoScreenStyles.scrollContent}
+      >
+        <View style={AccountInfoScreenStyles.avatarSection}>
+          <View style={AccountInfoScreenStyles.avatarWrapper}>
             <Image
               source={{ uri: 'https://avatar.iran.liara.run/public' }}
-              style={styles.avatar}
+              style={AccountInfoScreenStyles.avatar}
             />
-            <TouchableOpacity style={styles.cameraBtn}>
+            <TouchableOpacity
+              style={AccountInfoScreenStyles.cameraBtn}
+            >
               <Ionicons name="camera" size={18} color="white" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>Nguyễn Văn A</Text>
-          <Text style={styles.profileRole}>
+          <Text style={AccountInfoScreenStyles.profileName}>
+            Nguyễn Văn A
+          </Text>
+          <Text style={AccountInfoScreenStyles.profileRole}>
             Cán bộ quản lý đô thị
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Thông tin cá nhân</Text>
+        <View style={AccountInfoScreenStyles.section}>
+          <Text style={AccountInfoScreenStyles.sectionLabel}>
+            Thông tin cá nhân
+          </Text>
 
-          <Text style={styles.inputLabel}>Họ và tên</Text>
+          <Text style={AccountInfoScreenStyles.inputLabel}>
+            Họ và tên
+          </Text>
           <TextInput
-            style={styles.input}
+            style={AccountInfoScreenStyles.input}
             defaultValue="Nguyễn Văn A"
           />
 
-          <Text style={styles.inputLabel}>Email</Text>
+          <Text style={AccountInfoScreenStyles.inputLabel}>
+            Email
+          </Text>
           <TextInput
-            style={styles.input}
+            style={AccountInfoScreenStyles.input}
             defaultValue="nguyen.vana@urban.gov.vn"
             keyboardType="email-address"
           />
 
-          <Text style={styles.inputLabel}>Số điện thoại</Text>
+          <Text style={AccountInfoScreenStyles.inputLabel}>
+            Số điện thoại
+          </Text>
           <TextInput
-            style={styles.input}
+            style={AccountInfoScreenStyles.input}
             defaultValue="0912 345 678"
             keyboardType="phone-pad"
           />
 
-          <Text style={styles.inputLabel}>Đơn vị công tác</Text>
-          <View style={[styles.input, styles.disabledInput]}>
+          <Text style={AccountInfoScreenStyles.inputLabel}>
+            Đơn vị công tác
+          </Text>
+          <View
+            style={[
+              AccountInfoScreenStyles.input,
+              AccountInfoScreenStyles.disabledInput,
+            ]}
+          >
             <Text style={{ color: COLORS.gray600 }}>
               Phòng Quản lý Đô thị Quận 1
             </Text>
@@ -94,20 +117,22 @@ export default function AccountInfoScreen() {
               color={COLORS.slate}
             />
           </View>
-          <Text style={styles.helperText}>
+          <Text style={AccountInfoScreenStyles.helperText}>
             Liên hệ quản trị viên để thay đổi đơn vị
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Cài đặt</Text>
+        <View style={AccountInfoScreenStyles.section}>
+          <Text style={AccountInfoScreenStyles.sectionLabel}>
+            Cài đặt
+          </Text>
 
-          <View style={styles.switchRow}>
+          <View style={AccountInfoScreenStyles.switchRow}>
             <View>
-              <Text style={styles.switchTitle}>
+              <Text style={AccountInfoScreenStyles.switchTitle}>
                 Nhận thông báo sự cố
               </Text>
-              <Text style={styles.switchSub}>
+              <Text style={AccountInfoScreenStyles.switchSub}>
                 Cập nhật trạng thái xử lý các vấn đề
               </Text>
             </View>
@@ -121,12 +146,12 @@ export default function AccountInfoScreen() {
             />
           </View>
 
-          <View style={styles.switchRow}>
+          <View style={AccountInfoScreenStyles.switchRow}>
             <View>
-              <Text style={styles.switchTitle}>
+              <Text style={AccountInfoScreenStyles.switchTitle}>
                 Chia sẻ vị trí khi báo cáo
               </Text>
-              <Text style={styles.switchSub}>
+              <Text style={AccountInfoScreenStyles.switchSub}>
                 Tự động gắn thẻ địa lý cho ảnh
               </Text>
             </View>
@@ -142,9 +167,11 @@ export default function AccountInfoScreen() {
         </View>
 
         {/* Save Button */}
-        <View style={styles.saveBtnContainer}>
-          <TouchableOpacity style={styles.saveBtn}>
-            <Text style={styles.saveBtnText}>Lưu thay đổi</Text>
+        <View style={AccountInfoScreenStyles.saveBtnContainer}>
+          <TouchableOpacity style={AccountInfoScreenStyles.saveBtn}>
+            <Text style={AccountInfoScreenStyles.saveBtnText}>
+              Lưu thay đổi
+            </Text>
           </TouchableOpacity>
         </View>
         <View style={{ height: 50 }} />
@@ -152,121 +179,3 @@ export default function AccountInfoScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  scrollContent: { padding: 0, backgroundColor: COLORS.gray50 },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-    backgroundColor: 'white',
-    paddingVertical: SPACING.lg,
-  },
-  avatarWrapper: { position: 'relative' },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.gray200,
-  },
-  cameraBtn: {
-    position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: COLORS.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'white',
-  },
-  profileName: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    marginTop: SPACING.md,
-  },
-  profileRole: { fontSize: FONT_SIZES.sm, color: COLORS.slate },
-  section: {
-    marginBottom: SPACING.xl,
-    backgroundColor: 'white',
-    padding: SPACING.lg,
-  },
-  sectionLabel: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: FONT_WEIGHTS.bold,
-    marginBottom: SPACING.lg,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.gray700,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  disabledInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray50,
-  },
-  helperText: {
-    fontSize: 11,
-    color: COLORS.slate,
-    marginTop: -8,
-    marginBottom: SPACING.md,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  switchTitle: { fontSize: FONT_SIZES.base, fontWeight: '600' },
-  switchSub: { fontSize: 12, color: COLORS.slate },
-  saveBtnContainer: {
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.xl * 2,
-    backgroundColor: 'white',
-  },
-  saveBtn: {
-    backgroundColor: COLORS.primary,
-    height: 55,
-    borderRadius: BORDER_RADIUS.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: SPACING.md,
-    ...SHADOWS.md,
-  },
-  saveBtnText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: FONT_SIZES.base,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

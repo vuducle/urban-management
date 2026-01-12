@@ -1,12 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { PlacedModel } from '../../../constants/ar-models';
+import { ObjectRotationControlsStyles } from '../../styles';
 
 interface ObjectRotationControlsProps {
   selectedObject: PlacedModel | null;
@@ -22,6 +18,7 @@ interface ObjectRotationControlsProps {
     delta: number
   ) => void;
   onReset: (modelId: number) => void;
+  onDelete: (modelId: number) => void;
   onClose: () => void;
 }
 
@@ -31,6 +28,7 @@ export const ObjectRotationControls = ({
   onScaleChange,
   onPositionChange,
   onReset,
+  onDelete,
   onClose,
 }: ObjectRotationControlsProps) => {
   const [expandedAxis, setExpandedAxis] = useState<
@@ -61,27 +59,30 @@ export const ObjectRotationControls = ({
     const currentValue = selectedObject.rotation[axisIndex] || 0;
 
     return (
-      <View style={styles.axisContainer}>
+      <View style={ObjectRotationControlsStyles.axisContainer}>
         <TouchableOpacity
           style={[
-            styles.axisButton,
+            ObjectRotationControlsStyles.axisButton,
             { borderLeftColor: color },
-            expandedAxis === axis && styles.axisButtonActive,
+            expandedAxis === axis &&
+              ObjectRotationControlsStyles.axisButtonActive,
           ]}
           onPress={() =>
             setExpandedAxis(expandedAxis === axis ? null : axis)
           }
         >
-          <Text style={styles.axisLabel}>{label}</Text>
-          <Text style={styles.axisValue}>
+          <Text style={ObjectRotationControlsStyles.axisLabel}>
+            {label}
+          </Text>
+          <Text style={ObjectRotationControlsStyles.axisValue}>
             {Math.round(currentValue)}°
           </Text>
         </TouchableOpacity>
 
         {expandedAxis === axis && (
-          <View style={styles.rotationControls}>
+          <View style={ObjectRotationControlsStyles.rotationControls}>
             <TouchableOpacity
-              style={styles.rotateButton}
+              style={ObjectRotationControlsStyles.rotateButton}
               onPress={() => rotateAxis(axis, -45)}
             >
               <Ionicons
@@ -89,19 +90,23 @@ export const ObjectRotationControls = ({
                 size={28}
                 color="#FF6B6B"
               />
-              <Text style={styles.rotateLabel}>-45°</Text>
+              <Text style={ObjectRotationControlsStyles.rotateLabel}>
+                -45°
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.rotateButton}
+              style={ObjectRotationControlsStyles.rotateButton}
               onPress={() => rotateAxis(axis, -15)}
             >
               <Ionicons name="play-back" size={24} color="#FFB800" />
-              <Text style={styles.rotateLabel}>-15°</Text>
+              <Text style={ObjectRotationControlsStyles.rotateLabel}>
+                -15°
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.rotateButton}
+              style={ObjectRotationControlsStyles.rotateButton}
               onPress={() => rotateAxis(axis, 15)}
             >
               <Ionicons
@@ -109,15 +114,19 @@ export const ObjectRotationControls = ({
                 size={24}
                 color="#00C851"
               />
-              <Text style={styles.rotateLabel}>+15°</Text>
+              <Text style={ObjectRotationControlsStyles.rotateLabel}>
+                +15°
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.rotateButton}
+              style={ObjectRotationControlsStyles.rotateButton}
               onPress={() => rotateAxis(axis, 45)}
             >
               <Ionicons name="add-circle" size={28} color="#33B5E5" />
-              <Text style={styles.rotateLabel}>+45°</Text>
+              <Text style={ObjectRotationControlsStyles.rotateLabel}>
+                +45°
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -126,22 +135,31 @@ export const ObjectRotationControls = ({
   };
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      <View style={styles.headerRow}>
-        <View style={styles.header}>
-          <Text style={styles.title}>
+    <View
+      style={ObjectRotationControlsStyles.container}
+      pointerEvents="box-none"
+    >
+      <View style={ObjectRotationControlsStyles.headerRow}>
+        <View style={ObjectRotationControlsStyles.header}>
+          <Text style={ObjectRotationControlsStyles.title}>
             {selectedObject.type.toUpperCase()}
           </Text>
         </View>
-        <View style={styles.headerActions}>
+        <View style={ObjectRotationControlsStyles.headerActions}>
           <TouchableOpacity
-            style={styles.resetButton}
+            style={ObjectRotationControlsStyles.resetButton}
             onPress={() => onReset(selectedObject.id)}
           >
             <Ionicons name="refresh" size={18} color="#FFB800" />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.closeButton}
+            style={ObjectRotationControlsStyles.deleteButton}
+            onPress={() => onDelete(selectedObject.id)}
+          >
+            <Ionicons name="trash" size={18} color="#FF3B30" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={ObjectRotationControlsStyles.closeButton}
             onPress={onClose}
           >
             <Ionicons name="close-circle" size={24} color="#FF6B6B" />
@@ -150,9 +168,9 @@ export const ObjectRotationControls = ({
       </View>
 
       {/* Rotation Section - Collapsed by default */}
-      <View style={styles.section}>
+      <View style={ObjectRotationControlsStyles.section}>
         <TouchableOpacity
-          style={styles.sectionHeader}
+          style={ObjectRotationControlsStyles.sectionHeader}
           onPress={() => setExpandedAxis(expandedAxis ? null : 'x')}
         >
           <Ionicons
@@ -160,10 +178,12 @@ export const ObjectRotationControls = ({
             size={16}
             color="#fff"
           />
-          <Text style={styles.sectionTitle}>Rotate</Text>
+          <Text style={ObjectRotationControlsStyles.sectionTitle}>
+            Rotate
+          </Text>
         </TouchableOpacity>
         {expandedAxis && (
-          <View style={styles.axesContainer}>
+          <View style={ObjectRotationControlsStyles.axesContainer}>
             <RotationAxis axis="x" label="X" color="#FF6B6B" />
             <RotationAxis axis="y" label="Y" color="#00C851" />
             <RotationAxis axis="z" label="Z" color="#33B5E5" />
@@ -172,46 +192,56 @@ export const ObjectRotationControls = ({
       </View>
 
       {/* Move Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Move</Text>
-        <View style={styles.moveControlsRow}>
-          <View style={styles.moveAxis}>
+      <View style={ObjectRotationControlsStyles.section}>
+        <Text style={ObjectRotationControlsStyles.sectionTitle}>
+          Move
+        </Text>
+        <View style={ObjectRotationControlsStyles.moveControlsRow}>
+          <View style={ObjectRotationControlsStyles.moveAxis}>
             <Ionicons name="arrow-back" size={14} color="#FF6B6B" />
             <TouchableOpacity
               onPress={() =>
                 onPositionChange(selectedObject.id, 'x', -0.1)
               }
             >
-              <Text style={styles.moveButton}>←</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                ←
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() =>
                 onPositionChange(selectedObject.id, 'x', 0.1)
               }
             >
-              <Text style={styles.moveButton}>→</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                →
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.moveAxis}>
+          <View style={ObjectRotationControlsStyles.moveAxis}>
             <Ionicons name="arrow-up" size={14} color="#00C851" />
             <TouchableOpacity
               onPress={() =>
                 onPositionChange(selectedObject.id, 'y', 0.1)
               }
             >
-              <Text style={styles.moveButton}>↑</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                ↑
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() =>
                 onPositionChange(selectedObject.id, 'y', -0.1)
               }
             >
-              <Text style={styles.moveButton}>↓</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                ↓
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.moveAxis}>
+          <View style={ObjectRotationControlsStyles.moveAxis}>
             <Ionicons
               name="swap-horizontal"
               size={14}
@@ -222,23 +252,29 @@ export const ObjectRotationControls = ({
                 onPositionChange(selectedObject.id, 'z', -0.1)
               }
             >
-              <Text style={styles.moveButton}>⤶</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                ⤶
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() =>
                 onPositionChange(selectedObject.id, 'z', 0.1)
               }
             >
-              <Text style={styles.moveButton}>⤷</Text>
+              <Text style={ObjectRotationControlsStyles.moveButton}>
+                ⤷
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
       {/* Scale Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Scale</Text>
-        <View style={styles.scaleControls}>
+      <View style={ObjectRotationControlsStyles.section}>
+        <Text style={ObjectRotationControlsStyles.sectionTitle}>
+          Scale
+        </Text>
+        <View style={ObjectRotationControlsStyles.scaleControls}>
           <TouchableOpacity
             onPress={() => {
               const currentScale = selectedObject.scale[0] || 1;
@@ -246,10 +282,12 @@ export const ObjectRotationControls = ({
               onScaleChange(selectedObject.id, newScale);
             }}
           >
-            <Text style={styles.moveButton}>−</Text>
+            <Text style={ObjectRotationControlsStyles.moveButton}>
+              −
+            </Text>
           </TouchableOpacity>
-          <View style={styles.scaleDisplayBox}>
-            <Text style={styles.scaleValue}>
+          <View style={ObjectRotationControlsStyles.scaleDisplayBox}>
+            <Text style={ObjectRotationControlsStyles.scaleValue}>
               {(selectedObject.scale[0] || 1).toFixed(1)}x
             </Text>
           </View>
@@ -260,149 +298,12 @@ export const ObjectRotationControls = ({
               onScaleChange(selectedObject.id, newScale);
             }}
           >
-            <Text style={styles.moveButton}>+</Text>
+            <Text style={ObjectRotationControlsStyles.moveButton}>
+              +
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 200,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    borderRadius: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  header: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  resetButton: {
-    padding: 4,
-  },
-  section: {
-    marginBottom: 8,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  axesContainer: {
-    gap: 4,
-    marginTop: 4,
-  },
-  axisContainer: {
-    marginBottom: 2,
-  },
-  axisButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderLeftWidth: 3,
-    padding: 6,
-    borderRadius: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  axisButtonActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  axisLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  axisValue: {
-    fontSize: 11,
-    color: '#aaa',
-  },
-  rotationControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 4,
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  rotateButton: {
-    alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 2,
-  },
-  rotateLabel: {
-    fontSize: 9,
-    color: '#fff',
-    marginTop: 1,
-  },
-  moveControlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: 8,
-    marginTop: 6,
-  },
-  moveAxis: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 2,
-  },
-  moveButton: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 4,
-    minWidth: 32,
-    textAlign: 'center',
-  },
-  scaleControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
-  },
-  scaleDisplayBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  scaleValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#33B5E5',
-  },
-});

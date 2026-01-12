@@ -15,7 +15,7 @@ export const useARTracking = ({
     any[]
   >([]);
 
-  const trackingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const trackingTimeoutRef = useRef<number | null>(null);
   const initializationStartRef = useRef<number>(Date.now());
 
   const resetTracking = () => {
@@ -30,7 +30,6 @@ export const useARTracking = ({
   };
 
   const onInitialized = (state: any, reason: any) => {
-    const timestamp = new Date().toISOString();
     const elapsedTime = (
       (Date.now() - initializationStartRef.current) /
       1000

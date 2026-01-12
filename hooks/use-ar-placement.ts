@@ -57,12 +57,6 @@ export const useARPlacement = ({
           Math.pow(intersection[2] - camPos[2], 2)
       );
 
-      console.log('🔵 Plane intersection:', {
-        planeY,
-        t,
-        intersection,
-        distance,
-      });
 
       if (distance < closestDistance) {
         closestDistance = distance;
@@ -324,6 +318,13 @@ export const useARPlacement = ({
     );
   };
 
+  const deleteModel = (modelId: number) => {
+    setPlacedModels((prev) =>
+      prev.filter((model) => model.id !== modelId)
+    );
+    console.log(`🗑️ Deleted model ${modelId}`);
+  };
+
   return {
     placedModels,
     selectedModel,
@@ -334,5 +335,6 @@ export const useARPlacement = ({
     updateModelScale,
     updateModelPosition,
     resetModelTransform,
+    deleteModel,
   };
 };

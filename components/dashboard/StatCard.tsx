@@ -1,7 +1,8 @@
 import { COLORS } from '@/constants/colors';
+import { StatCardStyles } from '../styles';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 // Define the shape of the data we want to display
 interface StatCardProps {
@@ -22,11 +23,14 @@ const StatCard: React.FC<StatCardProps> = ({
   badgeText,
 }) => {
   return (
-    <View style={styles.card}>
-      <View style={styles.topRow}>
+    <View style={StatCardStyles.card}>
+      <View style={StatCardStyles.topRow}>
         {/* Icon with dynamic background color */}
         <View
-          style={[styles.iconContainer, { backgroundColor: bgColor }]}
+          style={[
+            StatCardStyles.iconContainer,
+            { backgroundColor: bgColor },
+          ]}
         >
           <MaterialCommunityIcons
             name={iconName}
@@ -39,19 +43,19 @@ const StatCard: React.FC<StatCardProps> = ({
         {badgeText && (
           <View
             style={[
-              styles.badge,
+              StatCardStyles.badge,
               title === 'Khẩn cấp' || title === 'Dringend'
-                ? styles.urgentBadge
-                : styles.normalBadge,
+                ? StatCardStyles.urgentBadge
+                : StatCardStyles.normalBadge,
             ]}
           >
-            <Text style={styles.badgeText}>{badgeText}</Text>
+            <Text style={StatCardStyles.badgeText}>{badgeText}</Text>
           </View>
         )}
       </View>
 
-      <Text style={styles.titleText}>{title}</Text>
-      <Text style={styles.valueText}>{value}</Text>
+      <Text style={StatCardStyles.titleText}>{title}</Text>
+      <Text style={StatCardStyles.valueText}>{value}</Text>
     </View>
   );
 };
@@ -59,7 +63,7 @@ const StatCard: React.FC<StatCardProps> = ({
 // Main Component to wrap the cards in a grid
 export const StatsGrid = () => {
   return (
-    <View style={styles.grid}>
+    <View style={StatCardStyles.grid}>
       <StatCard
         title="Tổng sự cố"
         value="12"
@@ -93,63 +97,5 @@ export const StatsGrid = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    width: Dimensions.get('window').width / 2 - 20, // Calculates width for 2 columns
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 15,
-    // Shadow for a clean look
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    padding: 8,
-    borderRadius: 10,
-  },
-  titleText: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  valueText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  normalBadge: {
-    backgroundColor: '#F0FDF4',
-  },
-  urgentBadge: {
-    backgroundColor: '#FEF2F2',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#10B981', // Green for +2
-  },
-});
 
 export default StatsGrid;

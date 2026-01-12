@@ -1,22 +1,15 @@
-import {
-  BORDER_RADIUS,
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  SHADOWS,
-  SPACING,
-} from '@/constants/colors';
+import { COLORS } from '@/constants/colors';
 import { getRelativeTime } from '@/hooks/get-relative-time';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
   SafeAreaView,
   SectionList,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { NotificationsStyles } from '@/components/styles';
 
 // Type definition for better type safety
 interface Notification {
@@ -264,30 +257,33 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={NotificationsStyles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Thông báo</Text>
+      <View style={NotificationsStyles.header}>
+        <Text style={NotificationsStyles.headerTitle}>Thông báo</Text>
         <TouchableOpacity>
-          <Text style={styles.markReadText}>Đánh dấu đã đọc</Text>
+          <Text style={NotificationsStyles.markReadText}>
+            Đánh dấu đã đọc
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterBar}>
+      <View style={NotificationsStyles.filterBar}>
         {['Tất cả', 'Hồ sơ', 'Hệ thống'].map((item) => (
           <TouchableOpacity
             key={item}
             onPress={() => setFilter(item)}
             style={[
-              styles.filterTab,
-              filter === item && styles.activeTab,
+              NotificationsStyles.filterTab,
+              filter === item && NotificationsStyles.activeTab,
             ]}
           >
             <Text
               style={[
-                styles.filterText,
-                filter === item && styles.activeFilterText,
+                NotificationsStyles.filterText,
+                filter === item &&
+                  NotificationsStyles.activeFilterText,
               ]}
             >
               {item}
@@ -301,13 +297,15 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.sectionHeader}>{title}</Text>
+          <Text style={NotificationsStyles.sectionHeader}>
+            {title}
+          </Text>
         )}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.notifCard}>
+          <TouchableOpacity style={NotificationsStyles.notifCard}>
             <View
               style={[
-                styles.iconBox,
+                NotificationsStyles.iconBox,
                 {
                   backgroundColor: item.unread
                     ? '#EFF6FF'
@@ -316,18 +314,26 @@ export default function NotificationsScreen() {
               ]}
             >
               {renderIcon(item.type)}
-              {item.unread && <View style={styles.unreadDot} />}
+              {item.unread && (
+                <View style={NotificationsStyles.unreadDot} />
+              )}
             </View>
-            <View style={styles.textContainer}>
-              <View style={styles.titleRow}>
-                <Text style={styles.notifTitle} numberOfLines={1}>
+            <View style={NotificationsStyles.textContainer}>
+              <View style={NotificationsStyles.titleRow}>
+                <Text
+                  style={NotificationsStyles.notifTitle}
+                  numberOfLines={1}
+                >
                   {item.title}
                 </Text>
-                <Text style={styles.timeText}>
+                <Text style={NotificationsStyles.timeText}>
                   {getRelativeTime(item.timestamp)}
                 </Text>
               </View>
-              <Text style={styles.descText} numberOfLines={2}>
+              <Text
+                style={NotificationsStyles.descText}
+                numberOfLines={2}
+              >
                 {item.desc}
               </Text>
             </View>
@@ -337,84 +343,3 @@ export default function NotificationsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  markReadText: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filterBar: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.gray100,
-    margin: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: 4,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: BORDER_RADIUS.md,
-  },
-  activeTab: { backgroundColor: COLORS.white, ...SHADOWS.sm },
-  filterText: { color: COLORS.gray500, fontWeight: '500' },
-  activeFilterText: { color: COLORS.gray900 },
-  sectionHeader: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.slate,
-    marginLeft: SPACING.lg,
-    marginTop: SPACING.md,
-  },
-  notifCard: {
-    flexDirection: 'row',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
-  },
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  unreadDot: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  textContainer: { flex: 1, marginLeft: SPACING.md },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  notifTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.gray900,
-    flex: 1,
-    marginRight: 8,
-  },
-  timeText: { fontSize: 11, color: COLORS.slate },
-  descText: { fontSize: 13, color: COLORS.gray600, lineHeight: 18 },
-});
