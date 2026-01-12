@@ -1,9 +1,32 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:1:1-2:12
-INJECTED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:1:1-2:12
+ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:1:1-14:12
+INJECTED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:1:1-14:12
 	package
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:2:5-42
 		INJECTED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:4:5-77
+	android:name
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:4:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION
+ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:5:5-94
+	android:name
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:5:22-91
+application
+ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:7:5-13:19
+service#expo.modules.myarscreenshot.MediaProjectionService
+ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:8:9-12:40
+	android:enabled
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:10:13-35
+	android:exported
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:12:13-37
+	android:foregroundServiceType
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:11:13-60
+	android:name
+		ADDED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml:9:13-51
 uses-sdk
 INJECTED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/vuducle/urban-management/modules/my-ar-screenshot/android/src/main/AndroidManifest.xml

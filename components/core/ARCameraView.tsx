@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Camera } from 'expo-camera';
-import * as Sharing from 'expo-sharing';
+import { Camera, CameraView } from 'expo-camera';
+import { Image } from 'expo-image';
+import * as MediaLibrary from 'expo-media-library';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,12 +13,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
 
 // Import ViroReact
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 
 // Import components and hooks
+import { captureRef, captureScreen } from 'react-native-view-shot';
+import { useARScreenshotDebug } from '../../hooks/use-ar-screenshot-debug';
 import { useARTracking } from '../../hooks/use-ar-tracking';
 import { useMeasurement } from '../../hooks/use-measurement';
 import ErrorBoundary from '../ErrorBoundary';
@@ -49,14 +51,27 @@ export default function ARCameraView({
     isTracking,
     arError,
     onInitialized,
-    handleARPlaneDetected,
+    handleARPlaneDetected: _handleARPlaneDetected,
   } = useARTracking({
     onARPlaneDetected: () => {},
   });
+  const { logCaptureMethods } = useARScreenshotDebug();
+  const viroNavigatorRef = useRef<any>(null);
+  const backgroundCameraRef = useRef<CameraView>(null);
+  const uiRef = useRef<View>(null);
+  const hiddenCompositionRef = useRef<View>(null);
+  const [compositionImages, setCompositionImages] = useState<{
+    bg: string;
+    fg: string;
+    ar?: string | null;
+  } | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   // Initialize camera and AR
   useEffect(() => {
     console.log('🚀 ARCameraView mounted');
+    logCaptureMethods();
     requestCameraPermission();
 
     if (Platform.OS === 'android') {
@@ -70,6 +85,7 @@ export default function ARCameraView({
       setIsARReady(false);
       resetMeasurement();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestCameraPermission = async () => {
@@ -130,18 +146,98 @@ export default function ARCameraView({
     }
   };
 
-  const takeScreenshot = async () => {
-    if (!viewRef.current) return;
+  /**
+   * Captures a screenshot of the AR scene using native PixelCopy (Android 15 compatible)
+   * with fallback to ViewShot for UI-only capture.
+   *
+   * Path A (PRIMARY - Android only): Uses native PixelCopy API via MyArScreenshot module
+   *   - Directly captures GL frame buffer without storage issues
+   *   - Works on Android 15 with proper hardware buffer handling
+   *
+   * Path B (FALLBACK - if PixelCopy fails): Uses react-native-view-shot
+   *   - Captures UI overlay only (buttons, text, measurements)
+   *   - AR content will be transparent/missing
+   */
+  const saveScreenshot = async () => {
     try {
-      const uri = await captureRef(viewRef.current, {
-        format: 'png',
-        quality: 1,
-      });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Gallery access is required to save AR screenshots.'
+        );
+        return;
       }
+
+      // --- iOS / Standard Path ---
+      if (Platform.OS !== 'android') {
+        if (viewRef.current) {
+          const uri = await captureRef(viewRef.current, {
+            format: 'png',
+            quality: 1,
+            result: 'tmpfile',
+          });
+          const asset = await MediaLibrary.createAssetAsync(uri);
+          await MediaLibrary.createAlbumAsync(
+            'AR Measurements',
+            asset,
+            false
+          );
+          Alert.alert('✅ Success', 'Screenshot saved!');
+        }
+        return;
+      }
+
+      // --- Android Strategy: react-native-view-shot with GLSurfaceView handling ---
+      if (Platform.OS === 'android') {
+        setIsCapturing(true);
+        try {
+          // Wait briefly to ensure UI is ready (optional, good practice)
+          await new Promise((r) => setTimeout(r, 100));
+
+          const uri = await captureScreen({
+            format: 'jpg',
+            quality: 0.8,
+            handleGLSurfaceViewOnAndroid: true, // Critical for AR/GL content
+          });
+
+          console.log('✅ Android GL Capture URI:', uri);
+
+          if (uri) {
+            const asset = await MediaLibrary.createAssetAsync(uri);
+            await MediaLibrary.createAlbumAsync(
+              'AR Measurements',
+              asset,
+              false
+            );
+            Alert.alert('✅ Success', 'Screenshot saved!');
+          } else {
+            throw new Error('No URI returned from captureScreen');
+          }
+        } catch (error) {
+          console.error('Android Screenshot Error:', error);
+          Alert.alert('Capture Failed', String(error));
+        } finally {
+          setIsCapturing(false);
+        }
+        return;
+      }
+
+      /*
+       * DEPRECATED: Viro Internal Screenshot
+       * (Produces black background on S21/Android 15)
+       * Kept as fallback only if Module is missing
+       */
+      let arUri: string | null = null;
+      // ...
     } catch (e) {
-      Alert.alert('Error', 'Screenshot failed');
+      console.error('Screenshot operation failed:', e);
+      Alert.alert(
+        'Error',
+        'An unexpected error occurred during capture.'
+      );
+      setIsCapturing(false);
+      setShowCamera(false);
     }
   };
 
@@ -197,8 +293,20 @@ export default function ARCameraView({
   // Measurement mode
   return (
     <View style={styles.fullScreen} ref={viewRef} collapsable={false}>
+      {showCamera && (
+        <CameraView
+          ref={backgroundCameraRef}
+          style={[StyleSheet.absoluteFill, { zIndex: 1000 }]} // Bring to front when creating
+          facing="back"
+        />
+      )}
       <ViroARSceneNavigator
+        ref={viroNavigatorRef}
+        allowScreenCapture={true}
+        secureTextEntry={false}
         initialScene={{ scene: MeasurementScene }}
+        renderingMode="Texture"
+        videoType="Texture"
         worldAlignment="GravityAndHeading"
         viroAppProps={{
           points,
@@ -210,81 +318,133 @@ export default function ARCameraView({
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Top Bar with Mode Toggle and Controls */}
-      <View style={styles.topContainer} pointerEvents="auto">
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={onClose}
-        >
-          <Ionicons name="close" size={28} color="white" />
-        </TouchableOpacity>
-
-        <View style={styles.modeToggle}>
+      <View
+        ref={uiRef}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+        collapsable={false}
+      >
+        {/* Top Bar with Mode Toggle and Controls */}
+        <View style={styles.topContainer} pointerEvents="auto">
           <TouchableOpacity
-            style={[
-              styles.modeButton,
-              mode === 'measure' && styles.modeButtonActive,
-            ]}
-            onPress={() => {
-              setMode('measure');
-              resetMeasurement();
-            }}
+            style={styles.closeButton}
+            onPress={onClose}
           >
-            <Text style={styles.modeButtonText}>Đo</Text>
+            <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
+
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                mode === 'measure' && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                setMode('measure');
+                resetMeasurement();
+              }}
+            >
+              <Text style={styles.modeButtonText}>Đo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                mode === 'model' && styles.modeButtonActive,
+              ]}
+              onPress={() => setMode('model')}
+            >
+              <Text style={styles.modeButtonText}>Mô hình</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            style={[
-              styles.modeButton,
-              mode === 'model' && styles.modeButtonActive,
-            ]}
-            onPress={() => setMode('model')}
+            style={styles.resetButton}
+            onPress={resetMeasurement}
           >
-            <Text style={styles.modeButtonText}>Mô hình</Text>
+            <Ionicons name="refresh" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={resetMeasurement}
-        >
-          <Ionicons name="refresh" size={24} color="white" />
-        </TouchableOpacity>
+        {/* Distance Display */}
+        {points.length === 2 && (
+          <MeasurementTopBar
+            mode={mode}
+            points={points}
+            distance={distance}
+            onClose={onClose}
+            onReset={resetMeasurement}
+          />
+        )}
+
+        {/* Crosshair */}
+        {isTracking && (
+          <View style={styles.centerCrosshair} pointerEvents="none">
+            <View style={styles.crosshairDot} />
+            <View style={styles.crosshairRingOuter}>
+              <View style={styles.crosshairRingInner} />
+            </View>
+          </View>
+        )}
+
+        {/* Bottom Controls */}
+        <MeasurementControls
+          isTracking={isTracking}
+          pointsCount={points.length}
+          onAddPoint={handleAddPoint}
+          onSwitchMode={() => setMode('model')}
+          onSaveScreenshot={() => {
+            if (isTracking) {
+              setTimeout(() => {
+                saveScreenshot();
+              }, 500);
+            } else {
+              Alert.alert('Wait', 'AR is still calibrating...');
+            }
+          }}
+        />
+
+        {/* Error Banner */}
+        {arError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{arError}</Text>
+          </View>
+        )}
       </View>
 
-      {/* Distance Display */}
-      {points.length === 2 && (
-        <MeasurementTopBar
-          mode={mode}
-          points={points}
-          distance={distance}
-          onClose={onClose}
-          onReset={resetMeasurement}
-        />
-      )}
+      {/* Composition View */}
+      {compositionImages && (
+        <View
+          ref={hiddenCompositionRef}
+          style={[
+            StyleSheet.absoluteFill,
+            { zIndex: 9999, backgroundColor: 'black' },
+          ]}
+          collapsable={false}
+        >
+          {/* 1. Base Layer: Real World OR Native AR (if Real World missing) */}
+          <Image
+            source={{ uri: compositionImages.bg }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
 
-      {/* Crosshair */}
-      {isTracking && (
-        <View style={styles.centerCrosshair} pointerEvents="none">
-          <View style={styles.crosshairDot} />
-          <View style={styles.crosshairRingOuter}>
-            <View style={styles.crosshairRingInner} />
-          </View>
-        </View>
-      )}
+          {/* 2. AR Overlay Layer */}
+          {/* If we have BOTH real world (bg) and AR (ar), we overlay AR with opacity */}
+          {compositionImages.bg !== compositionImages.ar &&
+            compositionImages.ar && (
+              <Image
+                source={{ uri: compositionImages.ar }}
+                style={[StyleSheet.absoluteFill, { opacity: 0.8 }]}
+                contentFit="cover"
+              />
+            )}
 
-      {/* Bottom Controls */}
-      <MeasurementControls
-        isTracking={isTracking}
-        pointsCount={points.length}
-        onAddPoint={handleAddPoint}
-        onSwitchMode={() => setMode('model')}
-        onSaveScreenshot={takeScreenshot}
-      />
-
-      {/* Error Banner */}
-      {arError && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{arError}</Text>
+          {/* 3. UI Layer (Top) */}
+          <Image
+            source={{ uri: compositionImages.fg }}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain" // Contain ensures entire UI fits; assuming aspect ratio matches
+          />
         </View>
       )}
     </View>

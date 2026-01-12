@@ -60,18 +60,20 @@ export const useARTracking = ({
       state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE
     ) {
       console.warn(
-        '⚠️  AR UNAVAILABLE - giving ARCore 5 seconds to initialize...'
+        '⚠️ AR UNAVAILABLE - giving ARCore more time to initialize...'
       );
       setIsTracking(false);
 
+      // Increase this to 15 or 20 seconds
       trackingTimeoutRef.current = setTimeout(() => {
-        console.error(
-          '❌ AR still unavailable after 5s - setting error state'
-        );
-        setArError(
-          'Không thể theo dõi AR. Vui lòng di chuyển thiết bị hoặc kiểm tra ARCore.'
-        );
-      }, 5000);
+        // Extra check: If it reached NORMAL in the meantime, don't set error
+        if (!isTracking) {
+          console.error('❌ AR still unavailable after 15s');
+          setArError(
+            'Không thể theo dõi AR. Vui lòng di chuyển thiết bị...'
+          );
+        }
+      }, 15000);
     } else if (
       state === ViroTrackingStateConstants.TRACKING_LIMITED
     ) {
