@@ -1,8 +1,8 @@
-import IncidentMap from '@/components/core/IncidentMap';
-import NewsSlider from '@/components/core/NewsSlider';
-import RecentActivity from '@/components/core/RecentActivity';
-import StatCard from '@/components/core/StatCard';
-import TopHeader from '@/components/core/TopHeader';
+import IncidentMap from '@/components/dashboard/IncidentMap';
+import NewsSlider from '@/components/dashboard/NewsSlider';
+import RecentActivity from '@/components/dashboard/RecentActivity';
+import StatCard from '@/components/dashboard/StatCard';
+import TopHeader from '@/components/dashboard/TopHeader';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

@@ -1,4 +1,4 @@
-import AccountInfoScreen from '@/components/core/AccountInfoScreen';
+import AccountInfoScreen from '@/components/profile/AccountInfoScreen';
 import React from 'react';
 
 function HoSo() {

@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,8 +22,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, {
+  Marker,
+  PROVIDER_DEFAULT,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 
+//feature threejs
+import ARCameraView from '@/components/core/ARCameraView';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 interface LocationResult {
   address: string;
   latitude: number;
@@ -53,6 +62,42 @@ export default function CreateReportModal() {
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [isUserTyping, setIsUserTyping] = useState(false);
+
+  const [isARMode, setIsARMode] = useState<boolean>(false);
+
+  const handleARCapture = (uri: string) => {
+    const newImage: UploadedImage = {
+      uri,
+      type: 'image',
+      name: `ar_photo_${Date.now()}.jpg`,
+    };
+    setImages([...images, newImage]);
+  };
+
+  if (isARMode) {
+    return (
+      <ErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('🚨 AR MODE CRASHED:');
+          console.error('Error:', error.message);
+          console.error('Stack:', error.stack);
+          console.error('Component Stack:', errorInfo.componentStack);
+          // Automatically return to normal mode on crash
+          setTimeout(() => setIsARMode(false), 3000);
+        }}
+      >
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ARCameraView
+            onClose={() => {
+              console.log('📍 AR Mode closed by user');
+              setIsARMode(false);
+            }}
+          />
+        </GestureHandlerRootView>
+      </ErrorBoundary>
+    );
+  }
 
   // Pick image from library
   const pickImage = async () => {
@@ -148,6 +193,7 @@ export default function CreateReportModal() {
   // Search locations using Expo Location Geocoding
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    setIsUserTyping(true);
 
     if (query.length < 2) {
       setSearchResults([]);
@@ -157,23 +203,74 @@ export default function CreateReportModal() {
 
     setLoading(true);
     try {
-      // Use Expo Location Geocoding for address search
-      const results = await Location.geocodeAsync(query);
+      // Add location bias for Vietnam
+      // If query doesn't contain Vietnam/city names, add it for better context
+      let searchQueryWithContext = query;
+      if (
+        !query.toLowerCase().includes('vietnam') &&
+        !query.toLowerCase().includes('việt nam')
+      ) {
+        searchQueryWithContext = `${query}, Vietnam`;
+      }
+
+      // Use Expo Location Geocoding for address search with better context
+      const results = await Location.geocodeAsync(
+        searchQueryWithContext
+      );
 
       if (results && results.length > 0) {
-        const mapped = results.slice(0, 5).map((result, index) => ({
-          address: query, // Fallback to search query as address
-          latitude: result.latitude,
-          longitude: result.longitude,
-          name: `${result.latitude.toFixed(
-            4
-          )}, ${result.longitude.toFixed(4)}`,
-        }));
+        // Reverse geocode to get actual addresses
+        const mapped = await Promise.all(
+          results.slice(0, 5).map(async (result) => {
+            try {
+              const reverseResults =
+                await Location.reverseGeocodeAsync({
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                });
+
+              if (reverseResults && reverseResults.length > 0) {
+                const addr = reverseResults[0];
+                const address = `${
+                  addr.street ? addr.street + ', ' : ''
+                }${addr.district ? addr.district + ', ' : ''}${
+                  addr.city ? addr.city : ''
+                }`;
+
+                return {
+                  address: address || query,
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                  name: `${result.latitude.toFixed(
+                    4
+                  )}, ${result.longitude.toFixed(4)}`,
+                };
+              }
+            } catch (e) {
+              console.warn('Reverse geocode error:', e);
+            }
+
+            return {
+              address: query,
+              latitude: result.latitude,
+              longitude: result.longitude,
+              name: `${result.latitude.toFixed(
+                4
+              )}, ${result.longitude.toFixed(4)}`,
+            };
+          })
+        );
+
         setSearchResults(mapped);
         setShowSuggestions(true);
+      } else {
+        setSearchResults([]);
+        setShowSuggestions(false);
       }
     } catch (error) {
       console.error('Geocoding error:', error);
+      setSearchResults([]);
+      setShowSuggestions(false);
     } finally {
       setLoading(false);
     }
@@ -184,6 +281,7 @@ export default function CreateReportModal() {
     setSelectedLocation(location);
     setSearchQuery(location.address);
     setShowSuggestions(false);
+    setIsUserTyping(false);
 
     const newRegion = {
       latitude: location.latitude,
@@ -196,7 +294,23 @@ export default function CreateReportModal() {
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
+    // Don't update if user is actively typing
+    if (isUserTyping) {
+      return;
+    }
+
     try {
+      // Request permission before reverse geocoding (required on Android)
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        console.warn(
+          'Location permission not granted for reverse geocoding'
+        );
+        return;
+      }
+
       const results = await Location.reverseGeocodeAsync({
         latitude: lat,
         longitude: lng,
@@ -254,6 +368,7 @@ export default function CreateReportModal() {
       mapRef.current?.animateToRegion(newRegion, 1000);
 
       // Get address from coordinates
+      setIsUserTyping(false);
       reverseGeocode(latitude, longitude);
     } catch (error) {
       console.error('Error getting location:', error);
@@ -275,12 +390,22 @@ export default function CreateReportModal() {
         <View style={styles.mapPlaceholder}>
           <MapView
             ref={mapRef}
+            provider={
+              Platform.OS === 'android'
+                ? PROVIDER_GOOGLE
+                : PROVIDER_DEFAULT
+            }
             style={styles.mapImage}
             region={region}
             onRegionChangeComplete={(newRegion) => {
               setRegion(newRegion);
-              // Auto-reverse geocode when user moves the map
-              reverseGeocode(newRegion.latitude, newRegion.longitude);
+              // Only auto-reverse geocode when user is NOT typing
+              if (!isUserTyping) {
+                reverseGeocode(
+                  newRegion.latitude,
+                  newRegion.longitude
+                );
+              }
             }}
           >
             {selectedLocation && (
@@ -309,9 +434,15 @@ export default function CreateReportModal() {
               placeholder="Tìm kiếm địa điểm (vd: Yoshiyoshi Ho Chi Minh)..."
               value={searchQuery}
               onChangeText={handleSearch}
-              onFocus={() =>
-                searchResults.length > 0 && setShowSuggestions(true)
-              }
+              onFocus={() => {
+                setIsUserTyping(true);
+                if (searchResults.length > 0)
+                  setShowSuggestions(true);
+              }}
+              onBlur={() => {
+                // Delay to allow suggestion selection
+                setTimeout(() => setIsUserTyping(false), 500);
+              }}
               placeholderTextColor={COLORS.gray400}
             />
             {loading && (
@@ -413,6 +544,31 @@ export default function CreateReportModal() {
             styles.uploadBtn,
             images.length >= 5 && styles.uploadBtnDisabled,
           ]}
+          onPress={() => setIsARMode(true)}
+          disabled={images.length >= 5}
+        >
+          <Ionicons
+            name="cube"
+            size={24}
+            color={
+              images.length >= 5 ? COLORS.gray400 : COLORS.primary
+            }
+          />
+          <Text
+            style={[
+              styles.uploadBtnText,
+              images.length >= 5 && { color: COLORS.gray400 },
+            ]}
+          >
+            AR View
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.uploadBtn,
+            images.length >= 5 && styles.uploadBtnDisabled,
+          ]}
           onPress={pickImage}
           disabled={images.length >= 5}
         >
@@ -505,7 +661,7 @@ export default function CreateReportModal() {
   );
 }
 
-const styles = StyleSheet.create({
+let styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.gray50 },
   content: { padding: SPACING.lg },
   sectionTitle: {

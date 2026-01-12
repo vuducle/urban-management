@@ -9,7 +9,7 @@ import {
   MaterialCommunityIcons,
   Octicons,
 } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import React from 'react';
 import {
   Platform,
@@ -30,6 +30,8 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
   state,
   navigation,
 }) => {
+  const router = useRouter();
+
   const handleTabPress = (routeName: string, isFocused: boolean) => {
     const event = navigation.emit({
       type: 'tabPress',
@@ -44,7 +46,8 @@ const CustomTabBarComponent: React.FC<CustomTabBarProps> = ({
   };
 
   const handleFabPress = () => {
-    navigation.navigate('modal');
+    // Open report form modal screen
+    router.push('/modal');
   };
 
   const getIsFocused = (routeName: string) => {
