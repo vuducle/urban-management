@@ -6,6 +6,7 @@ import {
   ViroBox,
   ViroDirectionalLight,
   ViroNode,
+  ViroSphere,
 } from '@reactvision/react-viro';
 import React from 'react';
 import {
@@ -15,6 +16,7 @@ import {
 
 interface ModelSceneProps {
   sceneNavigator: any;
+  onModelClick?: (modelId: number) => void;
 }
 
 export const ModelScene = (props: ModelSceneProps) => {
@@ -26,6 +28,7 @@ export const ModelScene = (props: ModelSceneProps) => {
     onCameraTransformUpdate,
     setIsLoadingModel,
     onRegisterNavigator,
+    onModelClick,
   } = props.sceneNavigator.viroAppProps;
 
   React.useEffect(() => {
@@ -89,35 +92,69 @@ export const ModelScene = (props: ModelSceneProps) => {
             onDrag={() => {}}
           >
             {model.type === 'cube' ? (
-              <ViroBox
-                position={[0, 0, 0]}
-                scale={config.scale}
-                materials={[
-                  {
-                    diffuseColor: '#FF6B6B',
-                    lightingModel: 'Phong',
-                  },
-                ]}
-              />
+              <>
+                {/* Visible cube */}
+                <ViroBox
+                  position={[0, 0, 0]}
+                  scale={config.scale}
+                  materials={[
+                    {
+                      diffuseColor: '#FF6B6B',
+                      lightingModel: 'Phong',
+                    },
+                  ]}
+                />
+                {/* Invisible larger sphere hitbox for easier clicking from ~1m away */}
+                <ViroSphere
+                  position={[0, 0, 0]}
+                  radius={0.3}
+                  opacity={0}
+                  onClick={() => {
+                    console.log(
+                      '🎯 Cube clicked:',
+                      model.id,
+                      model.type
+                    );
+                    onModelClick?.(model.id);
+                  }}
+                />
+              </>
             ) : (
-              <Viro3DObject
-                source={config.source}
-                type={config.type}
-                position={[0, 0, 0]}
-                scale={config.scale}
-                resources={config.resources}
-                lightReceivingBitMask={1}
-                shadowCastingBitMask={0}
-                highAccuracyEvents={true}
-                transformBehaviors={['billboardY']}
-                animation={undefined}
-                onLoadStart={() => setIsLoadingModel(true)}
-                onLoadEnd={() => setIsLoadingModel(false)}
-                onError={(event) => {
-                  console.log('Model load error:', event);
-                  setIsLoadingModel(false);
-                }}
-              />
+              <>
+                {/* Visible 3D model */}
+                <Viro3DObject
+                  source={config.source}
+                  type={config.type}
+                  position={[0, 0, 0]}
+                  scale={config.scale}
+                  resources={config.resources}
+                  lightReceivingBitMask={1}
+                  shadowCastingBitMask={0}
+                  highAccuracyEvents={true}
+                  transformBehaviors={['billboardY']}
+                  animation={undefined}
+                  onLoadStart={() => setIsLoadingModel(true)}
+                  onLoadEnd={() => setIsLoadingModel(false)}
+                  onError={(event) => {
+                    console.log('Model load error:', event);
+                    setIsLoadingModel(false);
+                  }}
+                />
+                {/* Invisible larger sphere hitbox for easier clicking from ~1m away */}
+                <ViroSphere
+                  position={[0, 0, 0]}
+                  radius={0.5}
+                  opacity={0}
+                  onClick={() => {
+                    console.log(
+                      '🎯 3D Model clicked:',
+                      model.id,
+                      model.type
+                    );
+                    onModelClick?.(model.id);
+                  }}
+                />
+              </>
             )}
           </ViroNode>
         );

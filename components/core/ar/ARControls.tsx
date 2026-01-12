@@ -32,7 +32,7 @@ export const ARControls = ({
   if (isCapturing) return null;
 
   return (
-    <View style={styles.bottomControls}>
+    <View style={styles.bottomControls} pointerEvents="box-none">
       {/* Undo Button */}
       <TouchableOpacity
         style={styles.sideButton}

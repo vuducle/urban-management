@@ -206,11 +206,35 @@ export const useARPlacement = ({
   const handleUndo = () =>
     setPlacedModels((prev) => prev.slice(0, -1));
 
+  const updateModelRotation = (
+    modelId: number,
+    axis: 'x' | 'y' | 'z',
+    value: number
+  ) => {
+    const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
+
+    setPlacedModels((prev) =>
+      prev.map((model) => {
+        if (model.id === modelId) {
+          const newRotation = [...model.rotation];
+          newRotation[axisIndex] = value;
+          console.log(
+            `🔄 Updated ${axis} axis to ${value}° for model ${modelId}`,
+            newRotation
+          );
+          return { ...model, rotation: newRotation };
+        }
+        return model;
+      })
+    );
+  };
+
   return {
     placedModels,
     selectedModel,
     setSelectedModel,
     handleAddObject,
     handleUndo,
+    updateModelRotation,
   };
 };
