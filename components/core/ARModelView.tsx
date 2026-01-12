@@ -21,6 +21,8 @@ import { useARTracking } from '../../hooks/use-ar-tracking';
 import { ARControls } from './ar/ARControls';
 import { AROverlay } from './ar/AROverlay';
 import { ModelScene } from './ar/ModelScene';
+import { ObjectRotationControls } from './ar/ObjectRotationControls';
+import { ObjectSelector } from './ar/ObjectSelector';
 
 export default function ARModelView({
   onClose,
@@ -38,6 +40,9 @@ export default function ARModelView({
     boolean | null
   >(null);
   const [isARReady, setIsARReady] = useState(false);
+  const [selectedObjectId, setSelectedObjectId] = useState<
+    number | null
+  >(null);
 
   // AR Tracking Hook
   const {
@@ -58,6 +63,10 @@ export default function ARModelView({
     setSelectedModel,
     handleAddObject,
     handleUndo,
+    updateModelRotation,
+    updateModelScale,
+    updateModelPosition,
+    resetModelTransform,
   } = useARPlacement({
     isTracking,
     planesDetected,
@@ -152,12 +161,44 @@ export default function ARModelView({
     setShowPlanes(true);
     setIsLoadingModel(false);
     setIsCapturing(false);
+    setSelectedObjectId(null);
     internalNavigatorRef.current = null;
     cameraPositionRef.current = null;
 
     setTimeout(() => {
       onClose();
     }, 100);
+  };
+
+  const handleModelClick = (modelId: number) => {
+    console.log('📌 Model selected for rotation:', modelId);
+    setSelectedObjectId(
+      selectedObjectId === modelId ? null : modelId
+    );
+  };
+
+  const handleRotationChange = (
+    modelId: number,
+    axis: 'x' | 'y' | 'z',
+    value: number
+  ) => {
+    updateModelRotation(modelId, axis, value);
+  };
+
+  const handleScaleChange = (modelId: number, value: number) => {
+    updateModelScale(modelId, value);
+  };
+
+  const handlePositionChange = (
+    modelId: number,
+    axis: 'x' | 'y' | 'z',
+    delta: number
+  ) => {
+    updateModelPosition(modelId, axis, delta);
+  };
+
+  const handleResetTransform = (modelId: number) => {
+    resetModelTransform(modelId);
   };
 
   const onRegisterNavigator = (navigator: any) => {
@@ -362,6 +403,7 @@ export default function ARModelView({
           updateModelTransform: () => {},
           setIsLoadingModel,
           onRegisterNavigator,
+          onModelClick: handleModelClick,
         }}
         style={StyleSheet.absoluteFill}
         worldAlignment="GravityAndHeading"
@@ -378,6 +420,28 @@ export default function ARModelView({
         onClose={handleClose}
         onTogglePlanes={() => setShowPlanes(!showPlanes)}
       />
+
+      {/* Object Selector - List view for easy selection */}
+      <ObjectSelector
+        placedModels={placedModels}
+        selectedObjectId={selectedObjectId}
+        onSelectObject={setSelectedObjectId}
+      />
+
+      {/* Object Rotation Controls */}
+      {selectedObjectId !== null && (
+        <ObjectRotationControls
+          selectedObject={
+            placedModels.find((m) => m.id === selectedObjectId) ||
+            null
+          }
+          onRotationChange={handleRotationChange}
+          onScaleChange={handleScaleChange}
+          onPositionChange={handlePositionChange}
+          onReset={handleResetTransform}
+          onClose={() => setSelectedObjectId(null)}
+        />
+      )}
 
       {/* Bottom Controls */}
       <ARControls
