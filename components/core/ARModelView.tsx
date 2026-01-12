@@ -67,6 +67,7 @@ export default function ARModelView({
     updateModelScale,
     updateModelPosition,
     resetModelTransform,
+    deleteModel,
   } = useARPlacement({
     isTracking,
     planesDetected,
@@ -199,6 +200,24 @@ export default function ARModelView({
 
   const handleResetTransform = (modelId: number) => {
     resetModelTransform(modelId);
+  };
+
+  const handleDeleteModel = (modelId: number) => {
+    Alert.alert(
+      'Xóa đối tượng',
+      'Bạn có chắc chắn muốn xóa đối tượng này?',
+      [
+        { text: 'Hủy', onPress: () => {}, style: 'cancel' },
+        {
+          text: 'Xóa',
+          onPress: () => {
+            deleteModel(modelId);
+            setSelectedObjectId(null);
+          },
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
   const onRegisterNavigator = (navigator: any) => {
@@ -378,7 +397,7 @@ export default function ARModelView({
   }
 
   // Show error if camera permission denied
-  if (hasCameraPermission === false) {
+  if (!hasCameraPermission) {
     return (
       <View style={styles.fullScreen}>
         <View style={styles.errorContainer}>
@@ -439,6 +458,7 @@ export default function ARModelView({
           onScaleChange={handleScaleChange}
           onPositionChange={handlePositionChange}
           onReset={handleResetTransform}
+          onDelete={handleDeleteModel}
           onClose={() => setSelectedObjectId(null)}
         />
       )}

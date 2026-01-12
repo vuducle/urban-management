@@ -61,22 +61,20 @@ export const ARControls = ({
 
       {/* Model Selector */}
       <View style={styles.modelSelector}>
-        {(['cube', 'pipeline', 'tv', 'leon'] as ModelType[]).map(
-          (type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.modelBtn,
-                selectedModel === type && styles.modelBtnActive,
-              ]}
-              onPress={() => onSelectModel(type)}
-            >
-              <Text style={styles.modelBtnText}>
-                {type.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
+        {(['cube', 'pipeline'] as ModelType[]).map((type) => (
+          <TouchableOpacity
+            key={type}
+            style={[
+              styles.modelBtn,
+              selectedModel === type && styles.modelBtnActive,
+            ]}
+            onPress={() => onSelectModel(type)}
+          >
+            <Text style={styles.modelBtnText}>
+              {type.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Screenshot Button */}

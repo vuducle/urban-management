@@ -22,6 +22,7 @@ interface ObjectRotationControlsProps {
     delta: number
   ) => void;
   onReset: (modelId: number) => void;
+  onDelete: (modelId: number) => void;
   onClose: () => void;
 }
 
@@ -31,6 +32,7 @@ export const ObjectRotationControls = ({
   onScaleChange,
   onPositionChange,
   onReset,
+  onDelete,
   onClose,
 }: ObjectRotationControlsProps) => {
   const [expandedAxis, setExpandedAxis] = useState<
@@ -139,6 +141,12 @@ export const ObjectRotationControls = ({
             onPress={() => onReset(selectedObject.id)}
           >
             <Ionicons name="refresh" size={18} color="#FFB800" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => onDelete(selectedObject.id)}
+          >
+            <Ionicons name="trash" size={18} color="#FF3B30" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.closeButton}
@@ -295,6 +303,9 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   closeButton: {
+    padding: 4,
+  },
+  deleteButton: {
     padding: 4,
   },
   headerActions: {

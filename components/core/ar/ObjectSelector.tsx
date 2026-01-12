@@ -33,10 +33,6 @@ export const ObjectSelector = ({
         return 'cube-outline';
       case 'pipeline':
         return 'git-network-outline';
-      case 'tv':
-        return 'tv-outline';
-      case 'leon':
-        return 'person-outline';
       default:
         return 'shapes-outline';
     }
