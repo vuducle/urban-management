@@ -46,3 +46,8 @@ app-example
 
 
 .env
+_vscode/
+.idea/
+._vscode/
+._idea/
+.vscode/
