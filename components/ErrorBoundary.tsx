@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import {
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ErrorBoundaryStyles } from './styles';
 
 interface Props {
   children: ReactNode;
@@ -74,29 +74,33 @@ export default class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <View style={styles.container}>
-          <View style={styles.errorBox}>
+        <View style={ErrorBoundaryStyles.container}>
+          <View style={ErrorBoundaryStyles.errorBox}>
             <Ionicons name="warning" size={64} color="#FF3B30" />
-            <Text style={styles.title}>Đã xảy ra lỗi</Text>
-            <Text style={styles.message}>
+            <Text style={ErrorBoundaryStyles.title}>
+              Đã xảy ra lỗi
+            </Text>
+            <Text style={ErrorBoundaryStyles.message}>
               Ứng dụng gặp sự cố không mong muốn.
             </Text>
 
             {__DEV__ && this.state.error && (
-              <ScrollView style={styles.detailsContainer}>
-                <Text style={styles.detailsTitle}>
+              <ScrollView
+                style={ErrorBoundaryStyles.detailsContainer}
+              >
+                <Text style={ErrorBoundaryStyles.detailsTitle}>
                   Chi tiết lỗi (Dev Mode):
                 </Text>
-                <Text style={styles.errorText}>
+                <Text style={ErrorBoundaryStyles.errorText}>
                   {this.state.error.toString()}
                 </Text>
                 {this.state.error.stack && (
-                  <Text style={styles.stackText}>
+                  <Text style={ErrorBoundaryStyles.stackText}>
                     {this.state.error.stack}
                   </Text>
                 )}
                 {this.state.errorInfo && (
-                  <Text style={styles.stackText}>
+                  <Text style={ErrorBoundaryStyles.stackText}>
                     {this.state.errorInfo.componentStack}
                   </Text>
                 )}
@@ -104,10 +108,12 @@ export default class ErrorBoundary extends Component<Props, State> {
             )}
 
             <TouchableOpacity
-              style={styles.button}
+              style={ErrorBoundaryStyles.button}
               onPress={this.handleReset}
             >
-              <Text style={styles.buttonText}>Thử lại</Text>
+              <Text style={ErrorBoundaryStyles.buttonText}>
+                Thử lại
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -117,71 +123,3 @@ export default class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    maxWidth: 400,
-    width: '100%',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF3B30',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  detailsContainer: {
-    maxHeight: 200,
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  detailsTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF9500',
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    fontFamily: 'monospace',
-    marginBottom: 8,
-  },
-  stackText: {
-    fontSize: 10,
-    color: '#999',
-    fontFamily: 'monospace',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

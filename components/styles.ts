@@ -1558,3 +1558,76 @@ export const LayoutStyles = StyleSheet.create({
     shadowRadius: 8,
   },
 });
+
+//
+// ============================================================================
+// Error Boundary Styles
+// ============================================================================
+export const ErrorBoundaryStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    maxWidth: 400,
+    width: '100%',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  detailsContainer: {
+    maxHeight: 200,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  detailsTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FF9500',
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    fontFamily: 'monospace',
+    marginBottom: 8,
+  },
+  stackText: {
+    fontSize: 10,
+    color: '#999',
+    fontFamily: 'monospace',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+// ============================================================================
