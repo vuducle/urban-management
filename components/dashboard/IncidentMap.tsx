@@ -2,15 +2,10 @@ import { COLORS } from '@/constants/colors';
 import Entypo from '@expo/vector-icons/Entypo';
 import { IncidentMapStyles } from '../../assets/styles';
 import React from 'react';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
-import MapView, {
-  Marker,
-  PROVIDER_APPLE,
-  PROVIDER_GOOGLE,
-} from 'react-native-maps';
+import { Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 
 const IncidentMap = () => {
-  // Example incidents - replace with your actual data
   const incidents = [
     {
       id: '1',
@@ -32,24 +27,23 @@ const IncidentMap = () => {
     },
   ];
 
-  // Use Apple Maps on iOS, Google Maps on Android
-  const provider =
-    Platform.OS === 'ios' ? PROVIDER_APPLE : PROVIDER_GOOGLE;
+  // OSM Tile Server URL
+  const osmUrlTemplate =
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   return (
     <View style={IncidentMapStyles.wrapper}>
-      {/* Header Section */}
       <View style={IncidentMapStyles.header}>
-        <Text style={IncidentMapStyles.title}>Bản đồ sự cố</Text>
+        <Text style={IncidentMapStyles.title}>
+          Bản đồ sự cố (OSM)
+        </Text>
         <TouchableOpacity>
           <Text style={IncidentMapStyles.expandText}>Mở rộng</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Map Container */}
       <View style={IncidentMapStyles.mapContainer}>
         <MapView
-          provider={provider}
           style={IncidentMapStyles.map}
           initialRegion={{
             latitude: 21.0285,
@@ -58,6 +52,12 @@ const IncidentMap = () => {
             longitudeDelta: 0.05,
           }}
         >
+          <UrlTile
+            urlTemplate={osmUrlTemplate}
+            maximumZ={19}
+            flipY={false}
+          />
+
           {incidents.map((incident) => (
             <Marker
               key={incident.id}
@@ -71,7 +71,6 @@ const IncidentMap = () => {
           ))}
         </MapView>
 
-        {/* Details Button - bottom right */}
         <TouchableOpacity style={IncidentMapStyles.detailsButton}>
           <Entypo
             name="map"
