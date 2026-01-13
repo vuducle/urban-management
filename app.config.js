@@ -24,9 +24,6 @@ module.exports = {
           'App cần quyền lưu ảnh vào thư viện.',
         ITSAppUsesNonExemptEncryption: false,
       },
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-      },
     },
     android: {
       adaptiveIcon: {
@@ -49,11 +46,6 @@ module.exports = {
         'android.permission.WRITE_EXTERNAL_STORAGE',
         'android.permission.RECORD_AUDIO',
       ],
-      config: {
-        googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY,
-        },
-      },
     },
     web: {
       output: 'static',
@@ -117,7 +109,6 @@ module.exports = {
       eas: {
         projectId: 'a8074838-5215-4ebb-9050-787bb47d9775',
       },
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
     },
     owner: 'vuducle',
     updates: {

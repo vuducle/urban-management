@@ -6,31 +6,21 @@ import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
-  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, {
-  Marker,
-  PROVIDER_DEFAULT,
-  PROVIDER_GOOGLE,
-} from 'react-native-maps';
+import MapView from 'react-native-maps';
 import { ModalStyles } from '@/assets/styles';
 
-//feature threejs
 import ARCameraView from '@/components/core/ARCameraView';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-interface LocationResult {
-  address: string;
-  latitude: number;
-  longitude: number;
-  name?: string;
-}
+import { ImageUploadSection } from '@/components/ui/ImageUploadSection';
+import { OSMMapSection } from '@/components/ui/OSMMapSection';
+import { useLocationManager } from '@/hooks/use-location-manager';
 
 interface UploadedImage {
   uri: string;
@@ -40,24 +30,31 @@ interface UploadedImage {
 
 export default function CreateReportModal() {
   const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState({
-    latitude: 10.7769, // Ho Chi Minh City
-    longitude: 106.7009,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<
-    LocationResult[]
-  >([]);
-  const [selectedLocation, setSelectedLocation] =
-    useState<LocationResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
-  const [isUserTyping, setIsUserTyping] = useState(false);
-
   const [isARMode, setIsARMode] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<
+    Array<{
+      address: string;
+      latitude: number;
+      longitude: number;
+      name?: string;
+    }>
+  >([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const {
+    region,
+    setRegion,
+    selectedLocation,
+    setSelectedLocation,
+    searchQuery,
+    setSearchQuery,
+    loading,
+    getCurrentLocation,
+    reverseGeocode,
+  } = useLocationManager();
 
   if (isARMode) {
     return (
@@ -67,7 +64,6 @@ export default function CreateReportModal() {
           console.error('Error:', error.message);
           console.error('Stack:', error.stack);
           console.error('Component Stack:', errorInfo.componentStack);
-          // Automatically return to normal mode on crash
           setTimeout(() => setIsARMode(false), 3000);
         }}
       >
@@ -86,7 +82,6 @@ export default function CreateReportModal() {
   // Pick image from library
   const pickImage = async () => {
     try {
-      // Request photo library permissions
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -128,7 +123,6 @@ export default function CreateReportModal() {
   // Take photo with camera
   const takePhoto = async () => {
     try {
-      // Request camera permissions
       const { status } =
         await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -185,10 +179,8 @@ export default function CreateReportModal() {
       return;
     }
 
-    setLoading(true);
+    setSearchLoading(true);
     try {
-      // Add location bias for Vietnam
-      // If query doesn't contain Vietnam/city names, add it for better context
       let searchQueryWithContext = query;
       if (
         !query.toLowerCase().includes('vietnam') &&
@@ -197,13 +189,11 @@ export default function CreateReportModal() {
         searchQueryWithContext = `${query}, Vietnam`;
       }
 
-      // Use Expo Location Geocoding for address search with better context
       const results = await Location.geocodeAsync(
         searchQueryWithContext
       );
 
       if (results && results.length > 0) {
-        // Reverse geocode to get actual addresses
         const mapped = await Promise.all(
           results.slice(0, 5).map(async (result) => {
             try {
@@ -256,12 +246,16 @@ export default function CreateReportModal() {
       setSearchResults([]);
       setShowSuggestions(false);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
   // Handle location selection from search results
-  const selectLocation = (location: LocationResult) => {
+  const selectLocation = (location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
     setSelectedLocation(location);
     setSearchQuery(location.address);
     setShowSuggestions(false);
@@ -277,91 +271,6 @@ export default function CreateReportModal() {
     mapRef.current?.animateToRegion(newRegion, 1000);
   };
 
-  const reverseGeocode = async (lat: number, lng: number) => {
-    // Don't update if user is actively typing
-    if (isUserTyping) {
-      return;
-    }
-
-    try {
-      // Request permission before reverse geocoding (required on Android)
-      const { status } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        console.warn(
-          'Location permission not granted for reverse geocoding'
-        );
-        return;
-      }
-
-      const results = await Location.reverseGeocodeAsync({
-        latitude: lat,
-        longitude: lng,
-      });
-
-      if (results && results.length > 0) {
-        const result = results[0];
-        const address = `${
-          result.street ? result.street + ', ' : ''
-        }${result.district ? result.district + ', ' : ''}${
-          result.city ? result.city : ''
-        }`;
-        setSearchQuery(address);
-        setSelectedLocation({
-          address,
-          latitude: lat,
-          longitude: lng,
-        });
-      }
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
-    }
-  };
-
-  // Get current device location
-  const getCurrentLocation = async () => {
-    try {
-      // Request location permissions
-      const { status } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        alert(
-          'Cần cấp quyền truy cập vị trí để sử dụng tính năng này'
-        );
-        return;
-      }
-
-      setLoading(true);
-      // Get current position
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const { latitude, longitude } = location.coords;
-
-      // Reverse geocode to get address
-      const newRegion = {
-        latitude,
-        longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      };
-      setRegion(newRegion);
-      mapRef.current?.animateToRegion(newRegion, 1000);
-
-      // Get address from coordinates
-      setIsUserTyping(false);
-      reverseGeocode(latitude, longitude);
-    } catch (error) {
-      console.error('Error getting location:', error);
-      alert('Không thể lấy vị trí hiện tại');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -371,38 +280,17 @@ export default function CreateReportModal() {
       <Text style={ModalStyles.sectionTitle}>Vị trí sự cố</Text>
 
       <View style={ModalStyles.mapCard}>
-        <View style={ModalStyles.mapPlaceholder}>
-          <MapView
-            ref={mapRef}
-            provider={
-              Platform.OS === 'android'
-                ? PROVIDER_GOOGLE
-                : PROVIDER_DEFAULT
+        <OSMMapSection
+          mapRef={mapRef}
+          region={region}
+          selectedLocation={selectedLocation}
+          onRegionChange={(newRegion) => {
+            setRegion(newRegion);
+            if (!isUserTyping) {
+              reverseGeocode(newRegion.latitude, newRegion.longitude);
             }
-            style={ModalStyles.mapImage}
-            region={region}
-            onRegionChangeComplete={(newRegion) => {
-              setRegion(newRegion);
-              // Only auto-reverse geocode when user is NOT typing
-              if (!isUserTyping) {
-                reverseGeocode(
-                  newRegion.latitude,
-                  newRegion.longitude
-                );
-              }
-            }}
-          >
-            {selectedLocation && (
-              <Marker
-                coordinate={{
-                  latitude: selectedLocation.latitude,
-                  longitude: selectedLocation.longitude,
-                }}
-                title="Vị trí sự cố"
-              />
-            )}
-          </MapView>
-        </View>
+          }}
+        />
 
         {/* SEARCH LOCATION INPUT */}
         <View style={ModalStyles.searchWrapper}>
@@ -424,12 +312,11 @@ export default function CreateReportModal() {
                   setShowSuggestions(true);
               }}
               onBlur={() => {
-                // Delay to allow suggestion selection
                 setTimeout(() => setIsUserTyping(false), 500);
               }}
               placeholderTextColor={COLORS.gray400}
             />
-            {loading && (
+            {searchLoading && (
               <ActivityIndicator
                 size="small"
                 color={COLORS.primary}
@@ -491,119 +378,13 @@ export default function CreateReportModal() {
       </View>
 
       {/* SECTION: Image Upload */}
-      <View style={ModalStyles.headerRow}>
-        <Text style={ModalStyles.sectionTitle}>
-          Hình ảnh hiện trường
-        </Text>
-        <Text style={ModalStyles.counter}>{images.length}/5</Text>
-      </View>
-
-      {/* Upload Buttons */}
-      <View style={ModalStyles.uploadButtonsContainer}>
-        <TouchableOpacity
-          style={[
-            ModalStyles.uploadBtn,
-            images.length >= 5 && ModalStyles.uploadBtnDisabled,
-          ]}
-          onPress={takePhoto}
-          disabled={images.length >= 5}
-        >
-          <Ionicons
-            name="camera"
-            size={24}
-            color={
-              images.length >= 5 ? COLORS.gray400 : COLORS.primary
-            }
-          />
-          <Text
-            style={[
-              ModalStyles.uploadBtnText,
-              images.length >= 5 && { color: COLORS.gray400 },
-            ]}
-          >
-            Chụp ảnh
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            ModalStyles.uploadBtn,
-            images.length >= 5 && ModalStyles.uploadBtnDisabled,
-          ]}
-          onPress={() => setIsARMode(true)}
-          disabled={images.length >= 5}
-        >
-          <Ionicons
-            name="cube"
-            size={24}
-            color={
-              images.length >= 5 ? COLORS.gray400 : COLORS.primary
-            }
-          />
-          <Text
-            style={[
-              ModalStyles.uploadBtnText,
-              images.length >= 5 && { color: COLORS.gray400 },
-            ]}
-          >
-            AR View
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            ModalStyles.uploadBtn,
-            images.length >= 5 && ModalStyles.uploadBtnDisabled,
-          ]}
-          onPress={pickImage}
-          disabled={images.length >= 5}
-        >
-          <Ionicons
-            name="image"
-            size={24}
-            color={
-              images.length >= 5 ? COLORS.gray400 : COLORS.primary
-            }
-          />
-          <Text
-            style={[
-              ModalStyles.uploadBtnText,
-              images.length >= 5 && { color: COLORS.gray400 },
-            ]}
-          >
-            Tải lên ảnh
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Image Preview Grid */}
-      {images.length > 0 && (
-        <FlatList
-          data={images}
-          renderItem={({ item, index }) => (
-            <View style={ModalStyles.imagePreviewContainer}>
-              <Image
-                source={{ uri: item.uri }}
-                style={ModalStyles.imagePreview}
-              />
-              <TouchableOpacity
-                style={ModalStyles.deleteImageBtn}
-                onPress={() => removeImage(index)}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={28}
-                  color={COLORS.danger}
-                />
-              </TouchableOpacity>
-            </View>
-          )}
-          keyExtractor={(_, index) => `image-${index}`}
-          numColumns={3}
-          scrollEnabled={false}
-          columnWrapperStyle={ModalStyles.imageGridRow}
-        />
-      )}
+      <ImageUploadSection
+        images={images}
+        onTakePhoto={takePhoto}
+        onPickImage={pickImage}
+        onOpenAR={() => setIsARMode(true)}
+        onRemove={removeImage}
+      />
 
       {/* SECTION: Details Form */}
       <Text style={ModalStyles.sectionTitle}>Thông tin chi tiết</Text>
